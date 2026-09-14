@@ -4,18 +4,20 @@ import BaseSensorChart from './BaseSensorChart';
 export default function AccelerometerOverlap({ labels, data1, data2 }) {
   const datasets = [
     {
-      label: 'Accel 1',
+      label: 'Accelerometer 1',
       data: data1,
-      borderColor: '#3b82f6',
+      borderColor: '#2563eb', // Blue
       borderWidth: 2,
-      tension: 0.2,
+      pointRadius: 0,
+      tension: 0.35,
     },
     {
-      label: 'Accel 2',
+      label: 'Accelerometer 2',
       data: data2,
-      borderColor: '#10b981',
+      borderColor: '#10b981', // Emerald Green
       borderWidth: 2,
-      tension: 0.2,
+      pointRadius: 0,
+      tension: 0.35,
     },
   ];
 

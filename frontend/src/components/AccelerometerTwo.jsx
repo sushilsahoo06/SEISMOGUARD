@@ -4,12 +4,14 @@ import BaseSensorChart from './BaseSensorChart';
 export default function AccelerometerTwo({ labels, data }) {
   const datasets = [
     {
-      label: 'Accel 2 Frequency',
+      label: 'Accelerometer 2',
       data: data,
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.2)',
+      borderColor: '#10b981', // Emerald Green
+      backgroundColor: 'rgba(16, 185, 129, 0.08)',
+      fill: true,
       borderWidth: 2,
-      tension: 0.2,
+      pointRadius: 0,
+      tension: 0.35,
     },
   ];
 

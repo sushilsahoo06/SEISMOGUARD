@@ -1,62 +1,49 @@
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
 const cors = require('cors');
-const pool = require('./db');
+const { Server } = require('socket.io');
+require('dotenv').config();
+
+const sensorRoutes = require('./routes/sensorRoutes');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
-
 const server = http.createServer(app);
+
+// Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: 'http://localhost:5173', // Vite default development URL
     methods: ['GET', 'POST'],
   },
 });
 
-// Endpoint for ESP32 to POST readings
-app.post('/api/sensor-data', async (req, res) => {
-  try {
-    const { accel_1, accel_2, vib_1, vib_2 } = req.body;
+// Middlewares
+app.use(cors());
+app.use(express.json());
 
-    const query = `
-      INSERT INTO sensor_readings (accel_1, accel_2, vib_1, vib_2)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *;
-    `;
-    const values = [accel_1, accel_2, vib_1, vib_2];
-    const result = await pool.query(query, values);
-    const savedRecord = result.rows[0];
+// Main Sensor API Routes
+app.use('/api/sensor-data', sensorRoutes);
 
-    // Broadcast in real-time to React frontend via WebSockets
-    io.emit('newSensorData', savedRecord);
-
-    return res.status(201).json({ success: true, data: savedRecord });
-  } catch (error) {
-    console.error('Error saving sensor data:', error);
-    return res.status(500).json({ error: 'Server error saving data' });
+// WebSocket Broadcast Middleware (runs right after controller's receiveData)
+app.use('/api/sensor-data', (req, res) => {
+  if (req.newSensorRecord) {
+    io.emit('newSensorData', req.newSensorRecord);
   }
 });
 
-// Endpoint to fetch historical data for charts
-app.get('/api/sensor-data/history', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT * FROM sensor_readings ORDER BY timestamp DESC LIMIT 50'
-    );
-    res.json(result.rows.reverse());
-  } catch (error) {
-    res.status(500).json({ error: 'Error fetching history' });
-  }
-});
-
+// WebSocket Connection Events
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
+  console.log(`[Socket] Client connected: ${socket.id}`);
+  socket.on('disconnect', () => {
+    console.log(`[Socket] Client disconnected: ${socket.id}`);
+  });
 });
 
-const PORT = 5000;
-server.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
+// Start HTTP + WebSocket Server
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, '0.0.0.0', () => {
+  console.log('===================================================');
+  console.log(`Structural Health Monitoring Server running on port ${PORT}`);
+  console.log(`Local Access: http://localhost:${PORT}`);
+  console.log('===================================================');
 });

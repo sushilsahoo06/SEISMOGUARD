@@ -4,14 +4,21 @@ import BaseSensorChart from './BaseSensorChart';
 export default function VibrationOne({ labels, data }) {
   const datasets = [
     {
-      label: 'Vib 1 Frequency',
+      label: 'Bldg 1 (Unprotected) - Impact Spikes',
       data: data,
-      borderColor: '#f59e0b',
-      backgroundColor: 'rgba(245, 158, 11, 0.2)',
-      borderWidth: 2,
-      tension: 0.2,
+      borderColor: '#ef4444', // Red for dangerous impact spikes
+      backgroundColor: 'rgba(239, 68, 68, 0.15)',
+      fill: true,
+      borderWidth: 1.5,
     },
   ];
 
-  return <BaseSensorChart title="Vibration Data 1" labels={labels} datasets={datasets} />;
+  return (
+    <BaseSensorChart 
+      title="Building 1 (Unprotected) - Impact Spikes" 
+      labels={labels} 
+      datasets={datasets} 
+      chartType="spike" // Enforces jagged lines and point rendering
+    />
+  );
 }

@@ -4,12 +4,14 @@ import BaseSensorChart from './BaseSensorChart';
 export default function AccelerometerOne({ labels, data }) {
   const datasets = [
     {
-      label: 'Accel 1 Frequency',
+      label: 'Accelerometer 1',
       data: data,
-      borderColor: '#3b82f6',
-      backgroundColor: 'rgba(59, 130, 246, 0.2)',
+      borderColor: '#2563eb', // Blue
+      backgroundColor: 'rgba(37, 99, 235, 0.08)',
+      fill: true,
       borderWidth: 2,
-      tension: 0.2,
+      pointRadius: 0,         // Clean line, no dots
+      tension: 0.35,          // Smooth oscillation wave
     },
   ];
 

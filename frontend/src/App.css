@@ -1,53 +1,137 @@
-* {
+/* ==========================================================================
+   Global Reset & Background (Fixes black background edge-to-edge)
+   ========================================================================== */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+html,
+body,
+#root {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-body {
+  width: 100%;
+  min-height: 100vh;
   background-color: #f8fafc;
-  color: #1e293b;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #0f172a;
 }
 
+/* ==========================================================================
+   Dashboard Layout
+   ========================================================================== */
 .dashboard-container {
+  width: 100%;
+  min-height: 100vh;
   padding: 24px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.dashboard-header {
-  margin-bottom: 24px;
-  border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 12px;
-}
-
-.grid-container {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-@media (max-width: 1024px) {
-  .grid-container {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .grid-container {
-    grid-template-columns: 1fr;
-  }
-}
-
-.card {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  background-color: #f8fafc;
   display: flex;
   flex-direction: column;
+}
+
+/* ==========================================================================
+   Header & Tabs
+   ========================================================================== */
+.dashboard-header {
+  width: 100%;
+  margin-bottom: 20px;
+  background: #ffffff;
+  padding: 18px 24px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dashboard-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 14px 0;
+}
+
+.nav-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nav-tab {
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 9px 18px;
+  border-radius: 6px;
+  color: #475569;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-tab:hover {
+  background-color: #e2e8f0;
+}
+
+.nav-tab.active {
+  background-color: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+/* ==========================================================================
+   Sub-header
+   ========================================================================== */
+.page-header {
+  margin-bottom: 16px;
+}
+
+.page-header h2 {
+  font-size: 1.2rem;
+  color: #1e293b;
+  margin: 0;
+}
+
+.page-header p {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+/* ==========================================================================
+   Grid Container (Charts layout)
+   ========================================================================== */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+/* ==========================================================================
+   Chart Cards
+   ========================================================================== */
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
 }
 
 .card-header {
@@ -55,28 +139,279 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  gap: 8px;
 }
 
 .card-header h3 {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  flex: 1;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.expand-badge {
+  font-size: 0.7rem;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .reset-btn {
-  background-color: #e2e8f0;
-  border: none;
-  padding: 4px 8px;
-  font-size: 0.75rem;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 3px 8px;
+  font-size: 0.72rem;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
 .reset-btn:hover {
-  background-color: #cbd5e1;
+  background-color: #e2e8f0;
 }
 
 .chart-container {
-  height: 240px;
+  height: 380px;
   position: relative;
   width: 100%;
+}
+
+/* ==========================================================================
+   Modal Dialog (Enlarged chart)
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.modal-content {
+  background: #ffffff;
+  width: 90vw;
+  max-width: 1100px;
+  height: 75vh;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.modal-header h2 {
+  font-size: 1.15rem;
+  color: #0f172a;
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.btn {
+  border: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.btn-zoom {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.btn-zoom:hover {
+  background: #e2e8f0;
+}
+
+.btn-reset {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-reset:hover {
+  background: #fecaca;
+}
+
+.btn-close {
+  background: transparent;
+  font-size: 1.25rem;
+  color: #64748b;
+  padding: 2px 8px;
+}
+
+.btn-close:hover {
+  color: #0f172a;
+}
+
+.modal-chart-container {
+  flex: 1;
+  min-height: 0;
+  margin-top: 14px;
+}
+
+.modal-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 8px;
+  text-align: right;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+
+/* Tablet Screens (iPad, Surface, landscape phones) */
+@media (max-width: 1024px) {
+  .dashboard-container {
+    padding: 16px;
+  }
+
+  /* Switch 3 columns into 2 columns */
+  .grid-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .chart-container {
+    height: 320px;
+  }
+
+  .modal-content {
+    width: 95vw;
+    height: 70vh;
+    padding: 16px;
+  }
+}
+
+/* Mobile Phone Screens (iPhone, Android) */
+@media (max-width: 650px) {
+  .dashboard-container {
+    padding: 12px;
+  }
+
+  .dashboard-header {
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.25rem;
+    text-align: center;
+  }
+
+  /* Stack nav tabs or stretch them cleanly */
+  .nav-bar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .nav-tab {
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+  }
+
+  .page-header h2 {
+    font-size: 1.05rem;
+  }
+
+  .page-header p {
+    font-size: 0.8rem;
+  }
+
+  /* Single full-width chart per row */
+  .grid-container {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .chart-container {
+    height: 280px; /* Reduced so chart fits nicely on mobile */
+  }
+
+  /* Fullscreen-like Modal for mobile */
+  .modal-backdrop {
+    padding: 8px;
+  }
+
+  .modal-content {
+    width: 100vw;
+    height: 85vh;
+    padding: 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 1rem;
+  }
+
+  .modal-actions .btn {
+    padding: 4px 8px;
+    font-size: 0.72rem;
+  }
+}
+/* Layout alignment for title and export button */
+.header-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Green clean CSV download button */
+.btn-export {
+  background-color: #059669;
+  color: #ffffff;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-export:hover {
+  background-color: #047857;
+  transform: translateY(-1px);
+}
+
+.btn-export:active {
+  transform: translateY(0);
 }

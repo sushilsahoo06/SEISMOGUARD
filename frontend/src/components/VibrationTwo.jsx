@@ -6,10 +6,12 @@ export default function VibrationTwo({ labels, data }) {
     {
       label: 'Bldg 2 (Resistant) - Dampened Impacts',
       data: data,
-      borderColor: '#10b981', // Emerald green for safe/isolated shocks
-      backgroundColor: 'rgba(16, 185, 129, 0.15)',
-      fill: true,
-      borderWidth: 1.5,
+      borderColor: 'rgb(20, 160, 120)',
+      backgroundColor: 'rgba(32, 178, 138, 0.55)', // Solid green fill matching the target image
+      fill: 'origin',
+      borderWidth: 1.8,
+      pointRadius: 0,
+      tension: 0.1,
     },
   ];
 
@@ -18,7 +20,7 @@ export default function VibrationTwo({ labels, data }) {
       title="Building 2 (Resistant) - Impact Spikes" 
       labels={labels} 
       datasets={datasets} 
-      chartType="spike" // Enforces jagged lines and point rendering
+      chartType="spike"
     />
   );
 }

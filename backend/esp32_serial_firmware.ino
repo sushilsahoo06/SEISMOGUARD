@@ -1,30 +1,8 @@
-/*
- * ═══════════════════════════════════════════════════════════════════
- *  SHM — Structural Health Monitoring
- *  ESP32 Firmware: Dual ADXL345 + Dual Vibration + Smart Buzzer Alarm
- * ═══════════════════════════════════════════════════════════════════
- *
- *  ► TRANSMISSION MODE:
- *    #define MODE_WIFI    → Active: Sends JSON directly over Wi-Fi
- *    //#define MODE_SERIAL → Uncomment to switch to USB Cable
- *
- *  PIN CONFIGURATION:
- *    • SDA ➔ GPIO 21
- *    • SCL ➔ GPIO 22
- *    • HW-072 Vibration #1 ➔ GPIO 25
- *    • HW-072 Vibration #2 ➔ GPIO 26
- *
- *    • BUZZER #1 (Building 1 Alarm) ➔ GPIO 32 (Active Buzzer (+) to 32, (-) to GND)
- *    • BUZZER #2 (Building 2 Alarm) ➔ GPIO 33 (Optional 2nd Buzzer)
- *
- *    • ADXL345 Sensor 1 (Building 1) ➔ Address 0x53 (SDO to GND, CS to 3.3V)
- *    • ADXL345 Sensor 2 (Building 2) ➔ Address 0x1D (SDO to 3.3V, CS to 3.3V)
- * ═══════════════════════════════════════════════════════════════════
- */
+
 
 // ── TRANSMISSION MODE ─────────────────────────────────────────────
-#define MODE_WIFI       // ← WiFi Wireless Mode (ACTIVE)
-//#define MODE_SERIAL   // (Commented out)
+//#define MODE_WIFI       // (Commented out — offline USB mode)
+#define MODE_SERIAL       // ← USB Cable Mode (ACTIVE - No WiFi needed!)
 // ──────────────────────────────────────────────────────────────────
 
 #include <WiFi.h>
@@ -33,11 +11,11 @@
 #include <ArduinoJson.h>
 
 // ── ▼ ENTER YOUR WIFI CREDENTIALS HERE ▼ ──────────────────────────
-const char* WIFI_SSID     = "YOUR_WIFI_NAME";      // ← Put your Wi-Fi name
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";  // ← Put your Wi-Fi password
+const char* WIFI_SSID     = "Airtel_Room No 110";      // ← Wi-Fi name
+const char* WIFI_PASSWORD = "Air@0786";                // ← Wi-Fi password
 
-// Your Laptop's local IP address (verified):
-const char* SERVER_URL    = "http://192.168.1.13:5000/api/sensor-data";
+// Your Laptop's local IP address (verified via ipconfig):
+const char* SERVER_URL    = "http://192.168.1.4:5000/api/sensor-data";
 // ──────────────────────────────────────────────────────────────────
 
 // ── Sensor & Buzzer Pin Definitions ───────────────────────────────
@@ -51,6 +29,13 @@ const char* SERVER_URL    = "http://192.168.1.13:5000/api/sensor-data";
 
 #define BUZZER_PIN_1   32   // Buzzer for Building 1 (Unprotected)
 #define BUZZER_PIN_2   33   // Buzzer for Building 2 (Optional)
+
+// ── Buzzer Active Level ───────────────────────────────────────────
+// Set to true for 2-pin active buzzer / Active-HIGH modules.
+// Set to false if using an Active-LOW buzzer module (modules that ring on LOW).
+#define BUZZER_ACTIVE_HIGH true
+#define BUZZER_ON  (BUZZER_ACTIVE_HIGH ? HIGH : LOW)
+#define BUZZER_OFF (BUZZER_ACTIVE_HIGH ? LOW : HIGH)
 
 // ADXL345 Registers
 #define POWER_CTL      0x2D
@@ -120,6 +105,13 @@ bool readADXL345(uint8_t address, float &x, float &y, float &z) {
 int evaluateStructuralDamage(float ax, float ay, float az, int vibTrigger, unsigned long &dangerStartMs) {
   // 1. Calculate shock magnitude and dynamic acceleration (minus 1g gravity)
   float mag = sqrt(ax * ax + ay * ay + az * az);
+
+  // If sensor is disconnected, uninitialized, or reads 0g, treat as safe (do NOT trigger false collapse!)
+  if (mag < 0.2f) {
+    dangerStartMs = 0;
+    return 0;
+  }
+
   float dynamicG = abs(mag - 1.0f);
 
   // 2. Calculate P-Delta tilt angle (degrees from vertical)
@@ -141,8 +133,8 @@ int evaluateStructuralDamage(float ax, float ay, float az, int vibTrigger, unsig
   if (tilt > 12.0f || durationDanger > 3000) {
     return 2;
   }
-  // WARNING (Level 1): Moderate shaking > 0.5g for > 1.5 sec OR vibration sensor tripped
-  if (dynamicG > 0.50f || vibTrigger == 1) {
+  // WARNING (Level 1): Moderate shaking > 0.5g
+  if (dynamicG > 0.50f) {
     return 1;
   }
   // SAFE (Level 0)
@@ -162,15 +154,15 @@ void setup() {
   Wire.begin(SDA_PIN, SCL_PIN);
   Wire.setClock(100000);
 
-  // Digital Vibration Sensors
-  pinMode(VIB1_PIN, INPUT);
-  pinMode(VIB2_PIN, INPUT);
+  // Digital Vibration Sensors (PULLDOWN prevents floating pins from triggering false alarms)
+  pinMode(VIB1_PIN, INPUT_PULLDOWN);
+  pinMode(VIB2_PIN, INPUT_PULLDOWN);
 
-  // Buzzer Output Pins
+  // Buzzer Output Pins (default to OFF)
   pinMode(BUZZER_PIN_1, OUTPUT);
   pinMode(BUZZER_PIN_2, OUTPUT);
-  digitalWrite(BUZZER_PIN_1, LOW);
-  digitalWrite(BUZZER_PIN_2, LOW);
+  digitalWrite(BUZZER_PIN_1, BUZZER_OFF);
+  digitalWrite(BUZZER_PIN_2, BUZZER_OFF);
 
   has_adxl1 = initADXL345(ADXL1);
   has_adxl2 = initADXL345(ADXL2);
@@ -226,23 +218,43 @@ void loop() {
   int alarm1 = evaluateStructuralDamage(x1, y1, z1, vib1, dangerStartMs_1);
   int alarm2 = evaluateStructuralDamage(x2, y2, z2, vib2, dangerStartMs_2);
 
-  // ── Control Physical Buzzers ─────────────────────────────────────
-  // Buzzer 1 (Building 1):
-  if (alarm1 == 2) {
-    digitalWrite(BUZZER_PIN_1, HIGH); // Continuous Loud Siren (Collapse Danger)
-  } else if (alarm1 == 1) {
-    digitalWrite(BUZZER_PIN_1, (millis() / 250) % 2); // Pulsing Warning Beep
+  // ── Control Physical Buzzer for Building 1 ──────────────────────
+  // Dynamic motion delta: measures actual physical vibration (immune to tilt & resting angles)
+  static float lastX1 = 0.0f, lastY1 = 0.0f, lastZ1 = 1.0f;
+  static int lastVib1 = 0;
+
+  float deltaA1 = sqrt(pow(x1 - lastX1, 2) + pow(y1 - lastY1, 2) + pow(z1 - lastZ1, 2));
+  lastX1 = x1;
+  lastY1 = y1;
+  lastZ1 = z1;
+
+  // SW-420 chattering: triggers only when state actively flips/switches
+  bool swChatter1 = (vib1 != lastVib1);
+  lastVib1 = vib1;
+
+  // True vibration: acceleration fluctuating (> 0.20g) OR vibration switch chattering
+  bool isVibrating1 = (deltaA1 > 0.20f) || swChatter1;
+
+  // Extend buzzer beep so human ears clearly hear every shake (300ms)
+  static unsigned long buzzerHoldTimer1 = 0;
+  if (isVibrating1) {
+    buzzerHoldTimer1 = millis() + 300;
+  }
+
+  // 🔔 BUZZER 1: SOUNDS ONLY WHILE VIBRATING, DEAD SILENT WHEN RESTING
+  if (millis() < buzzerHoldTimer1) {
+    digitalWrite(BUZZER_PIN_1, BUZZER_ON); // ACTIVE: Vibrating!
   } else {
-    digitalWrite(BUZZER_PIN_1, LOW);  // Silent (Normal Shaking)
+    digitalWrite(BUZZER_PIN_1, BUZZER_OFF); // SILENT: Resting
   }
 
   // Buzzer 2 (Building 2, if plugged in):
   if (alarm2 == 2) {
-    digitalWrite(BUZZER_PIN_2, HIGH);
+    digitalWrite(BUZZER_PIN_2, BUZZER_ON);
   } else if (alarm2 == 1) {
-    digitalWrite(BUZZER_PIN_2, (millis() / 250) % 2);
+    digitalWrite(BUZZER_PIN_2, ((millis() / 250) % 2) ? BUZZER_ON : BUZZER_OFF);
   } else {
-    digitalWrite(BUZZER_PIN_2, LOW);
+    digitalWrite(BUZZER_PIN_2, BUZZER_OFF);
   }
 
   // ── Build JSON object for Web / Backend ──────────────────────────

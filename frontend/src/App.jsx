@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import FrequencyPage from './pages/FrequencyPage';
 import VibrationPage from './pages/VibrationPage';
 import OrientationPage from './pages/OrientationPage';
+import PostAnalysisPage from './pages/PostAnalysisPage';
 import './App.css';
 
 const SOCKET_SERVER_URL = 'http://localhost:5000';
@@ -122,6 +123,7 @@ export default function App() {
             <NavLink to="/frequency" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Accelerometer</NavLink>
             <NavLink to="/vibration" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Vibration</NavLink>
             <NavLink to="/orientation" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Orientation</NavLink>
+            <NavLink to="/post-analysis" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'} style={{ background: '#eff6ff', color: '#2563eb', fontWeight: 600 }}>📊 Post-Event Report</NavLink>
           </nav>
         </header>
 
@@ -162,6 +164,7 @@ export default function App() {
           <Route path="/frequency" element={<FrequencyPage labels={labels} ax1={ax1} ay1={ay1} az1={az1} ax2={ax2} ay2={ay2} az2={az2} />} />
           <Route path="/vibration" element={<VibrationPage labels={labels} vib1={vib1} vib2={vib2} sw420_1={sw420_1} sw420_2={sw420_2} vibCount1={vibCount1} vibCount2={vibCount2} />} />
           <Route path="/orientation" element={<OrientationPage labels={labels} mag1={mag1} roll1={roll1} pitch1={pitch1} mag2={mag2} roll2={roll2} pitch2={pitch2} />} />
+          <Route path="/post-analysis" element={<PostAnalysisPage />} />
         </Routes>
 
         {/* ── Live System Status Bar ─────────────────────────────────── */}

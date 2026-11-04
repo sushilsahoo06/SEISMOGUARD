@@ -13,7 +13,7 @@ const { ReadlineParser } = require('@serialport/parser-readline');
 const http = require('http');
 
 // Config
-const DEFAULT_PORT = process.argv[2] || 'COM11'; // Can pass port as: node serial_reader.js COM11
+const DEFAULT_PORT = process.argv[2] || 'COM6'; // Can pass port as: node serial_reader.js COM11
 const BAUD_RATE    = 115200;
 const BACKEND_URL  = 'http://localhost:5000/api/sensor-data';
 

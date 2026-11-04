@@ -590,3 +590,36 @@ body,
     align-items: flex-start;
   }
 }
+
+
+/* ==========================================================================
+   Print & PDF Export Styles
+   ========================================================================== */
+@media print {
+  body, html, #root {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+  .dashboard-header,
+  .nav-bar,
+  .structural-alert-banner,
+  .temp-status-bar,
+  .no-print,
+  button {
+    display: none !important;
+  }
+  .dashboard-container {
+    padding: 0 !important;
+    background: transparent !important;
+  }
+  .print-header {
+    display: block !important;
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+}
+
+.print-header {
+  display: none;
+}

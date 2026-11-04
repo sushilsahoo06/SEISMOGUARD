@@ -5,6 +5,8 @@ const { Server } = require('socket.io');
 require('dotenv').config();
 
 const sensorRoutes = require('./routes/sensorRoutes');
+const occupantRoutes = require('./routes/occupantRoutes');
+const alertRoutes = require('./routes/alertRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -21,8 +23,13 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Main Sensor API Routes
+// Health Check
+app.get('/health', (req, res) => res.json({ status: 'ok', server: 'SHM Live Backend', timestamp: new Date() }));
+
+// API Routes
 app.use('/api/sensor-data', sensorRoutes);
+app.use('/api/occupants', occupantRoutes);
+app.use('/api/alerts', alertRoutes);
 
 // WebSocket Broadcast Middleware (runs right after controller's receiveData)
 app.use('/api/sensor-data', (req, res) => {

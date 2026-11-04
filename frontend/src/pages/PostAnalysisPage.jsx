@@ -61,7 +61,7 @@ function cleanReportText(text) {
 }
 
 export default function PostAnalysisPage() {
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://shm-v5rg.onrender.com';
 
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);

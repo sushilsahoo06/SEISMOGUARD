@@ -10,12 +10,11 @@
 
 const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
-const http = require('http');
 
 // Config
-const DEFAULT_PORT = process.argv[2] || 'COM6'; // Can pass port as: node serial_reader.js COM11
+const DEFAULT_PORT = process.argv[2] || 'COM6'; // e.g. node serial_reader.js COM6
 const BAUD_RATE    = 115200;
-const BACKEND_URL  = 'http://localhost:5000/api/sensor-data';
+const BACKEND_URL  = process.env.BACKEND_URL || process.argv[3] || 'https://shm-v5rg.onrender.com/api/sensor-data';
 
 let packetCount = 0;
 let lastStatus  = Date.now();
@@ -79,41 +78,31 @@ async function startBridge() {
       return;
     }
 
-    // POST data to Express backend
+    // POST data to cloud or local backend via fetch
     const payload = JSON.stringify(data);
-    const options = {
-      hostname: 'localhost',
-      port: 5000,
-      path: '/api/sensor-data',
+    fetch(BACKEND_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
-      },
-    };
-
-    const req = http.request(options, () => {
-      packetCount++;
-      const now = Date.now();
-      // Log summary once every second
-      if (now - lastStatus >= 1000) {
-        const v1 = data.sw420_1 ? '🔴 VIB' : '⚪ IDLE';
-        const v2 = data.sw420_2 ? '🔴 VIB' : '⚪ IDLE';
-        console.log(
-          `[📦 ${packetCount} pkts] ` +
-          `B1(X=${(data.accel_x_1 ?? 0).toFixed(2)}g Y=${(data.accel_y_1 ?? 0).toFixed(2)}g Z=${(data.accel_z_1 ?? 0).toFixed(2)}g | ${v1})  ` +
-          `B2(X=${(data.accel_x_2 ?? 0).toFixed(2)}g Y=${(data.accel_y_2 ?? 0).toFixed(2)}g Z=${(data.accel_z_2 ?? 0).toFixed(2)}g | ${v2})`
-        );
-        lastStatus = now;
-      }
-    });
-
-    req.on('error', () => {
-      // Backend not yet reachable
-    });
-
-    req.write(payload);
-    req.end();
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+    })
+      .then(() => {
+        packetCount++;
+        const now = Date.now();
+        // Log summary once every second
+        if (now - lastStatus >= 1000) {
+          const v1 = data.sw420_1 ? '🔴 VIB' : '⚪ IDLE';
+          const v2 = data.sw420_2 ? '🔴 VIB' : '⚪ IDLE';
+          console.log(
+            `[📦 ${packetCount} pkts] ` +
+            `B1(X=${(data.accel_x_1 ?? 0).toFixed(2)}g Y=${(data.accel_y_1 ?? 0).toFixed(2)}g Z=${(data.accel_z_1 ?? 0).toFixed(2)}g | ${v1})  ` +
+            `B2(X=${(data.accel_x_2 ?? 0).toFixed(2)}g Y=${(data.accel_y_2 ?? 0).toFixed(2)}g Z=${(data.accel_z_2 ?? 0).toFixed(2)}g | ${v2})`
+          );
+          lastStatus = now;
+        }
+      })
+      .catch(() => {
+        // Backend not yet reachable or temporary network hiccup
+      });
   });
 
   port.on('error', (err) => console.error(`[PORT ERR] ${err.message}`));

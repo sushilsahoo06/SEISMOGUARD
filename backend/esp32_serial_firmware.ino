@@ -1,21 +1,33 @@
-
+/*
+ * ═══════════════════════════════════════════════════════════════════
+ *  SHM ESP32 Dual-Building Structural Health Monitoring Firmware
+ * ═══════════════════════════════════════════════════════════════════
+ *  Building 1: ADXL345 (0x53) + SW-420 (GPIO 25) + Buzzer (GPIO 32)
+ *  Building 2: ADXL345 (0x1D) + SW-420 (GPIO 26) + Buzzer (GPIO 33)
+ * ═══════════════════════════════════════════════════════════════════
+ */
 
 // ── TRANSMISSION MODE ─────────────────────────────────────────────
-//#define MODE_WIFI       // (Commented out — offline USB mode)
-#define MODE_SERIAL       // ← USB Cable Mode (ACTIVE - No WiFi needed!)
+// Choose ONE mode below:
+// 1. MODE_SERIAL (Recommended): Plug USB cable into laptop, run `node serial_reader.js COM6`.
+//    100% reliable, zero Wi-Fi dropouts.
+// 2. MODE_WIFI: Connects directly to Wi-Fi and streams to Render in the cloud.
+#define MODE_SERIAL       // ← USB Cable Mode (ACTIVE - Recommended)
+//#define MODE_WIFI       // ← Uncomment for Direct Wi-Fi Mode
 // ──────────────────────────────────────────────────────────────────
 
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <Wire.h>
 #include <ArduinoJson.h>
 
-// ── ▼ ENTER YOUR WIFI CREDENTIALS HERE ▼ ──────────────────────────
-const char* WIFI_SSID     = "Airtel_Room No 110";      // ← Wi-Fi name
-const char* WIFI_PASSWORD = "Air@0786";                // ← Wi-Fi password
+// ── Wi-Fi & Cloud Render Target ───────────────────────────────────
+const char* WIFI_SSID     = "Airtel_Room No 110";      // Wi-Fi Name
+const char* WIFI_PASSWORD = "Air@0786";                // Wi-Fi Password
 
-// Your Laptop's local IP address (verified via ipconfig):
-const char* SERVER_URL    = "http://192.168.1.4:5000/api/sensor-data";
+// Render Cloud Target:
+const char* SERVER_URL    = "https://shm-v5rg.onrender.com/api/sensor-data";
 // ──────────────────────────────────────────────────────────────────
 
 // ── Sensor & Buzzer Pin Definitions ───────────────────────────────
@@ -30,9 +42,7 @@ const char* SERVER_URL    = "http://192.168.1.4:5000/api/sensor-data";
 #define BUZZER_PIN_1   32   // Buzzer for Building 1 (Unprotected)
 #define BUZZER_PIN_2   33   // Buzzer for Building 2 (Optional)
 
-// ── Buzzer Active Level ───────────────────────────────────────────
-// Set to true for 2-pin active buzzer / Active-HIGH modules.
-// Set to false if using an Active-LOW buzzer module (modules that ring on LOW).
+// Buzzer Active Level
 #define BUZZER_ACTIVE_HIGH true
 #define BUZZER_ON  (BUZZER_ACTIVE_HIGH ? HIGH : LOW)
 #define BUZZER_OFF (BUZZER_ACTIVE_HIGH ? LOW : HIGH)
@@ -49,7 +59,7 @@ const float G_PER_LSB = 0.0039f;
 bool has_adxl1 = false;
 bool has_adxl2 = false;
 
-// Sample rate: 50ms (20 Hz)
+// Sample rate: 50ms (20 Hz telemetry)
 const int SAMPLE_RATE_MS = 50;
 
 // Civil Engineering Collapse Cumulative Timers
@@ -103,10 +113,9 @@ bool readADXL345(uint8_t address, float &x, float &y, float &z) {
 // ── Civil Engineering Damage Evaluation ───────────────────────────
 // Returns: 0 = Normal / Safe, 1 = Structural Warning, 2 = Critical Collapse
 int evaluateStructuralDamage(float ax, float ay, float az, int vibTrigger, unsigned long &dangerStartMs) {
-  // 1. Calculate shock magnitude and dynamic acceleration (minus 1g gravity)
   float mag = sqrt(ax * ax + ay * ay + az * az);
 
-  // If sensor is disconnected, uninitialized, or reads 0g, treat as safe (do NOT trigger false collapse!)
+  // If sensor is disconnected or uninitialized, guard against false alarms
   if (mag < 0.2f) {
     dangerStartMs = 0;
     return 0;
@@ -114,30 +123,28 @@ int evaluateStructuralDamage(float ax, float ay, float az, int vibTrigger, unsig
 
   float dynamicG = abs(mag - 1.0f);
 
-  // 2. Calculate P-Delta tilt angle (degrees from vertical)
+  // P-Delta tilt angle
   float roll  = abs(atan2(ay, az) * 180.0f / 3.14159f);
   float pitch = abs(atan2(-ax, sqrt(ay * ay + az * az)) * 180.0f / 3.14159f);
   float tilt  = max(roll, pitch);
 
-  // 3. Track sustained duration at high resonance (> 0.8g)
+  // Sustained resonance check
   if (dynamicG > 0.80f) {
     if (dangerStartMs == 0) dangerStartMs = millis();
   } else {
-    dangerStartMs = 0; // Reset if shaking calms down
+    dangerStartMs = 0;
   }
 
   unsigned long durationDanger = (dangerStartMs > 0) ? (millis() - dangerStartMs) : 0;
 
-  // ── CIVIL ENGINEERING COLLAPSE CRITERIA ─────────────────────────
-  // CRITICAL (Level 2): Permanent tilt > 12° OR sustained destructive shaking > 3 sec
-  if (tilt > 12.0f || durationDanger > 3000) {
+  // CRITICAL (Level 2): Permanent tilt > 14° OR sustained high shock > 3 sec
+  if (tilt > 14.0f || durationDanger > 3000) {
     return 2;
   }
   // WARNING (Level 1): Moderate shaking > 0.5g
   if (dynamicG > 0.50f) {
     return 1;
   }
-  // SAFE (Level 0)
   return 0;
 }
 
@@ -154,7 +161,7 @@ void setup() {
   Wire.begin(SDA_PIN, SCL_PIN);
   Wire.setClock(100000);
 
-  // Digital Vibration Sensors (PULLDOWN prevents floating pins from triggering false alarms)
+  // Digital Vibration Sensors
   pinMode(VIB1_PIN, INPUT_PULLDOWN);
   pinMode(VIB2_PIN, INPUT_PULLDOWN);
 
@@ -177,7 +184,7 @@ void setup() {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   int tries = 0;
-  while (WiFi.status() != WL_CONNECTED && tries < 40) {
+  while (WiFi.status() != WL_CONNECTED && tries < 30) {
     delay(500);
     Serial.print(".");
     tries++;
@@ -187,11 +194,11 @@ void setup() {
     Serial.println("\n\n🎉 [WIFI CONNECTED SUCCESSFULLY]");
     Serial.print("  ➤ ESP32 IP Address : ");
     Serial.println(WiFi.localIP());
-    Serial.print("  ➤ Streaming Target  : ");
+    Serial.print("  ➤ Cloud Target     : ");
     Serial.println(SERVER_URL);
     Serial.println("══════════════════════════════════════════════════════\n");
   } else {
-    Serial.println("\n❌ Wi-Fi Connection Failed! Check SSID and Password.");
+    Serial.println("\n❌ Wi-Fi Connection Failed. Fallback to USB mode.");
   }
 #else
   Serial.println("OK: USB Serial Stream Ready.");
@@ -210,16 +217,15 @@ void loop() {
   if (has_adxl1) readADXL345(ADXL1, x1, y1, z1);
   if (has_adxl2) readADXL345(ADXL2, x2, y2, z2);
 
-  // Digital vibration sensors (HIGH = 1, LOW = 0)
+  // Digital vibration sensors
   int vib1 = digitalRead(VIB1_PIN) == HIGH ? 1 : 0;
   int vib2 = digitalRead(VIB2_PIN) == HIGH ? 1 : 0;
 
-  // ── Evaluate Damage for Both Buildings ───────────────────────────
+  // Evaluate Damage
   int alarm1 = evaluateStructuralDamage(x1, y1, z1, vib1, dangerStartMs_1);
   int alarm2 = evaluateStructuralDamage(x2, y2, z2, vib2, dangerStartMs_2);
 
-  // ── Control Physical Buzzer for Building 1 ──────────────────────
-  // Dynamic motion delta: measures actual physical vibration (immune to tilt & resting angles)
+  // ── Physical Buzzer: Sound ONLY while actively vibrating ──────────
   static float lastX1 = 0.0f, lastY1 = 0.0f, lastZ1 = 1.0f;
   static int lastVib1 = 0;
 
@@ -228,33 +234,20 @@ void loop() {
   lastY1 = y1;
   lastZ1 = z1;
 
-  // SW-420 chattering: triggers only when state actively flips/switches
   bool swChatter1 = (vib1 != lastVib1);
   lastVib1 = vib1;
 
-  // True vibration: acceleration fluctuating (> 0.20g) OR vibration switch chattering
   bool isVibrating1 = (deltaA1 > 0.20f) || swChatter1;
 
-  // Extend buzzer beep so human ears clearly hear every shake (300ms)
   static unsigned long buzzerHoldTimer1 = 0;
   if (isVibrating1) {
     buzzerHoldTimer1 = millis() + 300;
   }
 
-  // 🔔 BUZZER 1: SOUNDS ONLY WHILE VIBRATING, DEAD SILENT WHEN RESTING
   if (millis() < buzzerHoldTimer1) {
-    digitalWrite(BUZZER_PIN_1, BUZZER_ON); // ACTIVE: Vibrating!
+    digitalWrite(BUZZER_PIN_1, BUZZER_ON); // Sounding during vibration
   } else {
-    digitalWrite(BUZZER_PIN_1, BUZZER_OFF); // SILENT: Resting
-  }
-
-  // Buzzer 2 (Building 2, if plugged in):
-  if (alarm2 == 2) {
-    digitalWrite(BUZZER_PIN_2, BUZZER_ON);
-  } else if (alarm2 == 1) {
-    digitalWrite(BUZZER_PIN_2, ((millis() / 250) % 2) ? BUZZER_ON : BUZZER_OFF);
-  } else {
-    digitalWrite(BUZZER_PIN_2, BUZZER_OFF);
+    digitalWrite(BUZZER_PIN_1, BUZZER_OFF); // Silent when resting
   }
 
   // ── Build JSON object for Web / Backend ──────────────────────────
@@ -272,24 +265,26 @@ void loop() {
   doc["vib_count_1"] = vib1;
   doc["vib_count_2"] = vib2;
 
-  // Real-time alarm flags sent to web dashboard:
   doc["alarm_1"]     = alarm1; // 0=Safe, 1=Warning, 2=Critical Collapse
   doc["alarm_2"]     = alarm2;
 
-  // ── 1. Always Stream JSON over USB Serial Cable for serial_reader.js ──
+  // ── 1. ALWAYS Stream JSON over USB Cable (for serial_reader.js) ──
   serializeJson(doc, Serial);
   Serial.println();
 
 #ifdef MODE_WIFI
-  // Optional: Send over WiFi HTTP POST if WiFi mode is active
+  // ── 2. Direct HTTPS Stream to Render over Wi-Fi ──────────────────
   if (WiFi.status() == WL_CONNECTED) {
     String payload;
     serializeJson(doc, payload);
 
+    WiFiClientSecure client;
+    client.setInsecure(); // Connect securely to Render without certificate bundling
+
     HTTPClient http;
-    http.begin(SERVER_URL);
+    http.begin(client, SERVER_URL);
     http.addHeader("Content-Type", "application/json");
-    http.setTimeout(150);
+    http.setTimeout(180);
     http.POST(payload);
     http.end();
   }

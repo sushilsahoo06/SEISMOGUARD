@@ -78,7 +78,7 @@ async function sendOccupantSMS(occupant) {
   const building = occupant.building_id || 'Building 1';
   const room = occupant.room_number || 'your unit';
 
-  const body = `🚨 CRITICAL EARTHQUAKE ALERT: Severe seismic tremor detected in ${building}, ${room}. You are listed as INSIDE THE BUILDING. EVACUATE IMMEDIATELY via stairs! Do not use elevators. Once safe outside, notify emergency staff.`;
+  const body = `CRITICAL EARTHQUAKE ALERT: Severe seismic tremor detected in ${building}, ${room}. You are listed as INSIDE THE BUILDING. EVACUATE IMMEDIATELY via stairs! Do not use elevators. Once safe outside, notify emergency staff.`;
 
   const message = await client.messages.create({
     body,
@@ -107,7 +107,7 @@ async function sendRelativeNotification(occupant) {
   const relation = occupant.relative_relation || 'contact';
   const occupantName = occupant.name || 'Resident';
 
-  const body = `⚠️ EARTHQUAKE ADVISORY: An earthquake has affected ${building} (${room}), where your ${relation} ${occupantName} resides. Emergency rescue & evacuation protocols are underway. You will receive updates as soon as they confirm safe evacuation.`;
+  const body = `EARTHQUAKE ADVISORY: An earthquake has affected ${building} (${room}), where your ${relation} ${occupantName} resides. Emergency rescue & evacuation protocols are underway. You will receive updates as soon as they confirm safe evacuation.`;
 
   const message = await client.messages.create({
     body,

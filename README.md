@@ -166,11 +166,11 @@ Integrated with **Twilio Telecom REST APIs** and **Deepgram**, the system automa
 
 ### 2. 💬 Resident Evacuation SMS & 🟢 WhatsApp
 - Sends a direct high-priority evacuation alert:
-  > *"🚨 CRITICAL EARTHQUAKE ALERT: Severe seismic tremor detected in Building 1, Flat 402. You are listed as INSIDE THE BUILDING. EVACUATE IMMEDIATELY via stairs! Do not use elevators."*
+  > *"CRITICAL EARTHQUAKE ALERT: Severe seismic tremor detected in Building 1, Flat 402. You are listed as INSIDE THE BUILDING. EVACUATE IMMEDIATELY via stairs! Do not use elevators."*
 
 ### 3. 👨‍👩‍👦 Relative / Family Member Advisory SMS
 - For each resident inside the building, an alert is automatically dispatched to their registered emergency contact:
-  > *"⚠️ EARTHQUAKE ADVISORY: An earthquake has affected Building 1 (Flat 402), where your Father Sushil Sahoo resides. Emergency rescue & evacuation protocols are underway. You will receive updates as soon as they confirm safe evacuation."*
+  > *"EARTHQUAKE ADVISORY: An earthquake has affected Building 1 (Flat 402), where your Father Sushil Sahoo resides. Emergency rescue & evacuation protocols are underway. You will receive updates as soon as they confirm safe evacuation."*
 
 ---
 

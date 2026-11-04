@@ -309,7 +309,7 @@ export default function OccupantsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone,
-          message: `🚨 EMERGENCY ALERT: Earthquake detected at ${building}! Evacuate immediately using emergency stairs. Do not use elevators.`,
+          message: `EMERGENCY ALERT: Earthquake detected at ${building}! Evacuate immediately using emergency stairs. Do not use elevators.`,
         }),
       });
       const data = await res.json();
@@ -367,7 +367,7 @@ export default function OccupantsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone: testPhone,
-          message: '🚨 SHM TEST ALERT: Structural Health Monitoring emergency notification verified on your device!',
+          message: 'SHM TEST ALERT: Structural Health Monitoring emergency notification verified on your device!',
         }),
       });
       const data = await res.json();
@@ -399,7 +399,7 @@ export default function OccupantsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone: testPhone,
-          message: '🚨 SHM TEST: WhatsApp Earthquake Alert System active & ready.',
+          message: 'SHM TEST: WhatsApp Earthquake Alert System active & ready.',
         }),
       });
       const data = await res.json();

@@ -99,7 +99,7 @@ async function executeEmergencyBroadcast({ building_id = 'All', source = 'Manual
 
     // ── B2. Trigger WhatsApp Alert to Occupant (Me) ───────────────────────
     try {
-      const waMsg = `🚨 CRITICAL EMERGENCY ALERT: Earthquake detected in ${occ.building_id || 'Building 1'}, ${occ.room_number || ''}! Please evacuate immediately via stairwells! Do not use elevators.`;
+      const waMsg = `CRITICAL EMERGENCY ALERT: Earthquake detected in ${occ.building_id || 'Building 1'}, ${occ.room_number || ''}! Please evacuate immediately via stairwells! Do not use elevators.`;
       const waRes = await twilioService.sendWhatsAppAlert(occ.phone, waMsg);
       occupantLog.whatsappStatus = 'Sent (SID: ' + waRes.sid + ')';
       await db.query(`
@@ -219,7 +219,7 @@ exports.checkAndTriggerAutonomousAlert = async (record, io) => {
   }
 
   autoDispatchConfig.lastTriggeredAt = now;
-  console.log('🚨 [AUTONOMOUS VIBRATION TRIGGER] Seismic shaking detected! Dispatching emergency calls & SMS automatically...');
+  console.log('[AUTONOMOUS VIBRATION TRIGGER] Seismic shaking detected! Dispatching emergency calls & SMS automatically...');
 
   try {
     const result = await executeEmergencyBroadcast({
@@ -229,7 +229,7 @@ exports.checkAndTriggerAutonomousAlert = async (record, io) => {
 
     if (io) {
       io.emit('autonomousAlertDispatched', {
-        message: '⚡ Seismic vibration detected! Emergency calls & SMS automatically dispatched to occupants and relatives.',
+        message: 'Seismic vibration detected! Emergency calls & SMS automatically dispatched to occupants and relatives.',
         result,
         timestamp: new Date(),
       });
@@ -265,7 +265,7 @@ exports.testSMS = async (req, res) => {
     const { phone, message } = req.body;
     if (!phone) return res.status(400).json({ error: 'Phone number is required.' });
 
-    const body = message || '🚨 SHM TEST ALERT: Structural Health Monitoring emergency notification system verified!';
+    const body = message || 'SHM TEST ALERT: Structural Health Monitoring emergency notification system verified!';
     const result = await twilioService.client.messages.create({
       body,
       to: twilioService.formatE164(phone),
@@ -285,7 +285,7 @@ exports.testWhatsApp = async (req, res) => {
     const { phone, message } = req.body;
     if (!phone) return res.status(400).json({ error: 'Phone number is required.' });
 
-    const body = message || '🚨 SHM TEST ALERT: WhatsApp Emergency Notification verified!';
+    const body = message || 'SHM TEST ALERT: WhatsApp Emergency Notification verified!';
     const result = await twilioService.sendWhatsAppAlert(phone, body);
 
     res.json({ status: 'success', message: 'Test WhatsApp message sent!', sid: result.sid });

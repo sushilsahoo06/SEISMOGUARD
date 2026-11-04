@@ -129,9 +129,9 @@ async function triggerEmergencyPhoneCall(buildingName, peakG, tiltDeg) {
       to: process.env.EMERGENCY_CONTACT_PHONE,
       from: process.env.TWILIO_PHONE_NUMBER,
     });
-    console.log(`✅ [Twilio] Emergency Phone Call triggered! Call SID: ${call.sid}`);
+    console.log(`[Twilio] Emergency Phone Call triggered! Call SID: ${call.sid}`);
   } catch (err) {
-    console.error('❌ [Twilio] Failed to make emergency call:', err.message);
+    console.error('[Twilio] Failed to make emergency call:', err.message);
   }
 }
 
@@ -145,12 +145,12 @@ async function triggerWhatsAppAlert(buildingName, peakG, tiltDeg) {
   if (now - lastWhatsAppTimestamp < WHATSAPP_COOLDOWN_MS) return;
   lastWhatsAppTimestamp = now;
 
-  const body = `⚠️ *SHM STRUCTURAL WARNING*\n` +
-               `🏢 *Location:* ${buildingName}\n` +
-               `📊 *Peak Motion:* ${peakG} g\n` +
-               `📐 *Tilt Angle:* ${tiltDeg}°\n` +
-               `⏰ *Time:* ${new Date().toLocaleTimeString()}\n` +
-               `🌐 *Live Dashboard:* http://localhost:5173`;
+  const body = `*SHM STRUCTURAL WARNING*\n` +
+               `Location: ${buildingName}\n` +
+               `Peak Motion: ${peakG} g\n` +
+               `Tilt Angle: ${tiltDeg} deg\n` +
+               `Time: ${new Date().toLocaleTimeString()}\n` +
+               `Live Dashboard: http://localhost:5173`;
 
   try {
     const message = await client.messages.create({
@@ -158,9 +158,9 @@ async function triggerWhatsAppAlert(buildingName, peakG, tiltDeg) {
       from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
       to: `whatsapp:${process.env.EMERGENCY_CONTACT_PHONE}`,
     });
-    console.log(`✅ [Twilio] WhatsApp alert sent! Message SID: ${message.sid}`);
+    console.log(`[Twilio] WhatsApp alert sent! Message SID: ${message.sid}`);
   } catch (err) {
-    console.error('❌ [Twilio] Failed to send WhatsApp message:', err.message);
+    console.error('[Twilio] Failed to send WhatsApp message:', err.message);
   }
 }
 

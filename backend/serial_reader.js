@@ -1,130 +1,126 @@
 /*
- * serial_reader.js
  * ═══════════════════════════════════════════════════════════════════
- * Reads JSON lines from ESP32 over USB Serial and POSTs to backend.
- * Run: node serial_reader.js
- *
- * USAGE:
- *  1. Find your COM port:
- *     - Windows: Device Manager → Ports (COM & LPT) → e.g. COM3
- *  2. Edit COM_PORT below to match your port
- *  3. Run: node serial_reader.js
+ *  serial_reader.js — USB Cable Bridge for ESP32 -> Web Dashboard
+ * ═══════════════════════════════════════════════════════════════════
+ *  Usage:
+ *    node serial_reader.js          (Uses default port or auto-detects)
+ *    node serial_reader.js COM11    (Specify exact port)
  * ═══════════════════════════════════════════════════════════════════
  */
 
-const { SerialPort }    = require('serialport');
+const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
 const http = require('http');
 
-// ── CONFIGURE THESE TWO LINES ─────────────────────────────────────
-const COM_PORT    = 'COM3';               // ← change to your port (COM3, COM5, etc.)
-const BAUD_RATE   = 115200;              // must match ESP32 Serial.begin(115200)
-const BACKEND_URL = 'http://localhost:5000/api/sensor-data';
-// ─────────────────────────────────────────────────────────────────
+// Config
+const DEFAULT_PORT = process.argv[2] || 'COM11'; // Can pass port as: node serial_reader.js COM11
+const BAUD_RATE    = 115200;
+const BACKEND_URL  = 'http://localhost:5000/api/sensor-data';
 
 let packetCount = 0;
-let errorCount  = 0;
 let lastStatus  = Date.now();
 
-// Open serial port
-const port = new SerialPort({
-  path: COM_PORT,
-  baudRate: BAUD_RATE,
-  autoOpen: false,
-});
+async function startBridge() {
+  let targetPort = DEFAULT_PORT;
 
-// Parse line-by-line (each JSON packet ends with \n)
-const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
-
-port.open((err) => {
-  if (err) {
-    console.error(`❌ Cannot open ${COM_PORT}: ${err.message}`);
-    console.error('   → Check: Is the port correct? Is Arduino Serial Monitor closed?');
-    process.exit(1);
-  }
-  console.log('═══════════════════════════════════════════════════════');
-  console.log(`  SHM Serial Reader — ${COM_PORT} @ ${BAUD_RATE} baud`);
-  console.log(`  Forwarding to: ${BACKEND_URL}`);
-  console.log('═══════════════════════════════════════════════════════');
-});
-
-// Handle each incoming line from ESP32
-parser.on('data', (line) => {
-  const raw = line.trim();
-  if (!raw || !raw.startsWith('{')) return; // skip empty / non-JSON lines
-
-  let data;
+  // Verify / list ports
   try {
-    data = JSON.parse(raw);
+    const ports = await SerialPort.list();
+    const portExists = ports.some((p) => p.path.toUpperCase() === targetPort.toUpperCase());
+
+    if (!portExists && ports.length > 0) {
+      console.log(`⚠️ Port ${targetPort} not found in available ports:`);
+      ports.forEach((p) => console.log(`   - ${p.path} (${p.manufacturer || 'USB Serial'})`));
+      // Auto-fallback if only 1 port exists
+      if (ports.length === 1) {
+        targetPort = ports[0].path;
+        console.log(`👉 Auto-selecting available port: ${targetPort}`);
+      }
+    }
   } catch (e) {
-    console.warn(`[PARSE ERR] ${raw}`);
-    return;
+    // Ignore listing error and proceed with targetPort
   }
 
-  // Show ESP32 ready message
-  if (data.status === 'ready') {
-    console.log('✅ ESP32 connected and sending data!\n');
-    return;
-  }
-  if (data.error) {
-    console.error(`❌ ESP32 error: ${data.error}`);
-    return;
-  }
-
-  // POST to backend
-  const payload = JSON.stringify(data);
-  const options = {
-    hostname: 'localhost',
-    port: 5000,
-    path: '/api/sensor-data',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(payload),
-    },
-  };
-
-  const req = http.request(options, (res) => {
-    packetCount++;
-
-    // Print status every second (not every 50ms — too noisy)
-    const now = Date.now();
-    if (now - lastStatus >= 1000) {
-      const sw1 = data.sw420_1 ? '🔴VIB' : '⚪---';
-      const sw2 = data.sw420_2 ? '🔴VIB' : '⚪---';
-      console.log(
-        `[📦 ${packetCount} pkts] ` +
-        `ax1=${(data.accel_x_1 ?? 0).toFixed(3)}g  ax2=${(data.accel_x_2 ?? 0).toFixed(3)}g  ` +
-        `SW420_1=${sw1}(${data.vib_count_1 ?? 0})  SW420_2=${sw2}(${data.vib_count_2 ?? 0})  ` +
-        `T1=${data.temp_1 ?? '—'}°C  T2=${data.temp_2 ?? '—'}°C`
-      );
-      lastStatus = now;
-    }
+  const port = new SerialPort({
+    path: targetPort,
+    baudRate: BAUD_RATE,
+    autoOpen: false,
   });
 
-  req.on('error', (err) => {
-    errorCount++;
-    if (errorCount <= 3) {
-      console.error(`[POST ERR] ${err.message} — is backend running on port 5000?`);
+  const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+
+  port.open((err) => {
+    if (err) {
+      console.error(`\n❌ Cannot open ${targetPort}: ${err.message}`);
+      console.error('   1. Check if the port is correct (e.g. node serial_reader.js COM11)');
+      console.error('   2. IMPORTANT: Is the Arduino Serial Monitor closed?');
+      process.exit(1);
     }
+    console.log('═══════════════════════════════════════════════════════');
+    console.log(`  SHM USB Serial Bridge ACTIVE: ${targetPort} @ ${BAUD_RATE}`);
+    console.log(`  Forwarding live data to: ${BACKEND_URL}`);
+    console.log('  Open Web Dashboard at: http://localhost:5173');
+    console.log('═══════════════════════════════════════════════════════');
   });
 
-  req.write(payload);
-  req.end();
-});
+  parser.on('data', (line) => {
+    const raw = line.trim();
+    if (!raw || !raw.startsWith('{')) return; // Ignore non-JSON lines
 
-// Handle port errors
-port.on('error', (err) => {
-  console.error(`[PORT ERR] ${err.message}`);
-});
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      return;
+    }
 
-port.on('close', () => {
-  console.log(`\nPort ${COM_PORT} closed. Total packets sent: ${packetCount}`);
-  process.exit(0);
-});
+    if (data.status === 'ready') {
+      console.log('✅ ESP32 handshake received — sensor streaming active!\n');
+      return;
+    }
 
-// Graceful shutdown
-process.on('SIGINT', () => {
-  console.log(`\n\nStopping... ${packetCount} packets forwarded, ${errorCount} errors.`);
-  port.close();
-});
+    // POST data to Express backend
+    const payload = JSON.stringify(data);
+    const options = {
+      hostname: 'localhost',
+      port: 5000,
+      path: '/api/sensor-data',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    };
+
+    const req = http.request(options, () => {
+      packetCount++;
+      const now = Date.now();
+      // Log summary once every second
+      if (now - lastStatus >= 1000) {
+        const v1 = data.sw420_1 ? '🔴 VIB' : '⚪ IDLE';
+        const v2 = data.sw420_2 ? '🔴 VIB' : '⚪ IDLE';
+        console.log(
+          `[📦 ${packetCount} pkts] ` +
+          `B1(X=${(data.accel_x_1 ?? 0).toFixed(2)}g Y=${(data.accel_y_1 ?? 0).toFixed(2)}g Z=${(data.accel_z_1 ?? 0).toFixed(2)}g | ${v1})  ` +
+          `B2(X=${(data.accel_x_2 ?? 0).toFixed(2)}g Y=${(data.accel_y_2 ?? 0).toFixed(2)}g Z=${(data.accel_z_2 ?? 0).toFixed(2)}g | ${v2})`
+        );
+        lastStatus = now;
+      }
+    });
+
+    req.on('error', () => {
+      // Backend not yet reachable
+    });
+
+    req.write(payload);
+    req.end();
+  });
+
+  port.on('error', (err) => console.error(`[PORT ERR] ${err.message}`));
+  port.on('close', () => {
+    console.log(`\nPort closed. Total packets received: ${packetCount}`);
+    process.exit(0);
+  });
+}
+
+startBridge();

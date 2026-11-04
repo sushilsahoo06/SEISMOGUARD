@@ -5,7 +5,7 @@ export default function OrientationPage({ labels, mag1, roll1, pitch1, mag2, rol
   return (
     <div>
       <div className="page-header">
-        <h2>Orientation & Magnitude — Derived Values (Dual MPU6050)</h2>
+        <h2>Orientation & Magnitude — Derived Tilt & Shock</h2>
         <p>
           <span style={{ color: '#f59e0b', fontWeight: 700 }}>● Building 1 (Unprotected)</span>
           {' '}vs{' '}

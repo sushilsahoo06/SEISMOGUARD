@@ -9,12 +9,13 @@ export default function FrequencyPage({ labels, ax1, ay1, az1, ax2, ay2, az2 }) 
   return (
     <div>
       <div className="page-header">
-        <h2>Accelerometer — X / Y / Z Axes (Dual MPU6050)</h2>
+        <h2>Accelerometer — X / Y / Z Axes (ADXL345)</h2>
         <p>
           <span style={{ color: C1.line, fontWeight: 700 }}>● Building 1 (Unprotected)</span>
           {' '}vs{' '}
           <span style={{ color: C2.line, fontWeight: 700 }}>● Building 2 (Resistant)</span>
-          {' '}— linear acceleration in g
+          {' '}— linear acceleration in g &nbsp;·&nbsp;
+          <span style={{ color: '#ef4444', fontWeight: 700 }}>🔴 Red Zone Collapse Threshold: &gt; ±1.0g</span>
         </p>
       </div>
       <div className="grid-container">

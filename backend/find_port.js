@@ -7,7 +7,7 @@ SerialPort.list().then((ports) => {
   console.log('  Available Serial Ports:');
   console.log('══════════════════════════════════════════');
   if (ports.length === 0) {
-    console.log('  ❌ No ports found. Is ESP32 plugged in?');
+    console.log('No ports found. Is ESP32 plugged in?');
   } else {
     ports.forEach((p) => {
       const isESP = p.manufacturer?.includes('Silicon') || 
@@ -15,7 +15,7 @@ SerialPort.list().then((ports) => {
                     p.manufacturer?.includes('CH340') ||
                     p.manufacturer?.includes('FTDI') ||
                     p.pnpId?.includes('USB');
-      const tag = isESP ? '  ← ✅ Likely ESP32!' : '';
+      const tag = isESP ? '  ← Likely ESP32!' : '';
       console.log(`  ${p.path.padEnd(8)} ${(p.manufacturer || 'Unknown').padEnd(30)} ${tag}`);
     });
   }

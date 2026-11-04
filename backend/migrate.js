@@ -19,7 +19,7 @@ async function migrate() {
       ADD COLUMN IF NOT EXISTS pitch      FLOAT DEFAULT 0,
       ADD COLUMN IF NOT EXISTS sensor_id  TEXT  DEFAULT 'mpu_1';
   `);
-  console.log('✅ Migration complete — all MPU6050 columns added.');
+  console.log('Migration complete — all MPU6050 columns added.');
   process.exit(0);
 }
 

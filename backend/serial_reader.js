@@ -91,31 +91,35 @@ async function startBridge() {
       return;
     }
 
-    // POST data to cloud or local backend via fetch
+    // POST data to BOTH Cloud Render (for Vercel) and Localhost (for local dashboard)
     const payload = JSON.stringify(data);
-    fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: payload,
-    })
-      .then(() => {
-        packetCount++;
-        const now = Date.now();
-        // Log summary once every second
-        if (now - lastStatus >= 1000) {
-          const v1 = data.sw420_1 ? '🔴 VIB' : '⚪ IDLE';
-          const v2 = data.sw420_2 ? '🔴 VIB' : '⚪ IDLE';
-          console.log(
-            `[📦 ${packetCount} pkts] ` +
-            `B1(X=${(data.accel_x_1 ?? 0).toFixed(2)}g Y=${(data.accel_y_1 ?? 0).toFixed(2)}g Z=${(data.accel_z_1 ?? 0).toFixed(2)}g | ${v1})  ` +
-            `B2(X=${(data.accel_x_2 ?? 0).toFixed(2)}g Y=${(data.accel_y_2 ?? 0).toFixed(2)}g Z=${(data.accel_z_2 ?? 0).toFixed(2)}g | ${v2})`
-          );
-          lastStatus = now;
-        }
-      })
-      .catch(() => {
-        // Backend not yet reachable or temporary network hiccup
-      });
+
+    Promise.allSettled([
+      fetch('https://shm-v5rg.onrender.com/api/sensor-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      }),
+      fetch('http://localhost:5000/api/sensor-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
+      }),
+    ]).then(() => {
+      packetCount++;
+      const now = Date.now();
+      // Log summary once every second
+      if (now - lastStatus >= 1000) {
+        const v1 = data.sw420_1 ? '🔴 VIB' : '⚪ IDLE';
+        const v2 = data.sw420_2 ? '🔴 VIB' : '⚪ IDLE';
+        console.log(
+          `[📦 ${packetCount} pkts] ` +
+          `B1(X=${(data.accel_x_1 ?? 0).toFixed(2)}g Y=${(data.accel_y_1 ?? 0).toFixed(2)}g Z=${(data.accel_z_1 ?? 0).toFixed(2)}g | ${v1})  ` +
+          `B2(X=${(data.accel_x_2 ?? 0).toFixed(2)}g Y=${(data.accel_y_2 ?? 0).toFixed(2)}g Z=${(data.accel_z_2 ?? 0).toFixed(2)}g | ${v2})`
+        );
+        lastStatus = now;
+      }
+    });
   });
 
   port.on('error', (err) => console.error(`[PORT ERR] ${err.message}`));

@@ -44,7 +44,7 @@ void scanI2C() {
     byte error = Wire.endTransmission();
     
     if (error == 0) {
-      Serial.printf("  ✔ Found I2C Device at address: 0x%02X", address);
+      Serial.printf("   Found I2C Device at address: 0x%02X", address);
       if (address == 0x68) Serial.print("  <-- MPU-6050 #1 (AD0 to GND)");
       if (address == 0x69) Serial.print("  <-- MPU-6050 #2 (AD0 to 3.3V)");
       Serial.println();
@@ -53,7 +53,7 @@ void scanI2C() {
   }
 
   if (devices == 0) {
-    Serial.println("\n  ❌ NO I2C DEVICES FOUND!");
+    Serial.println("\n  NO I2C DEVICES FOUND!");
     Serial.println("  Possible causes:");
     Serial.println("   1. SDA and SCL are reversed (swap pin 21 and pin 22).");
     Serial.println("   2. VCC is not getting power (try connecting VCC to VIN or 5V).");
@@ -80,9 +80,9 @@ void setup() {
     mpu1.setAccelerometerRange(MPU6050_RANGE_2_G);
     mpu1.setGyroRange(MPU6050_RANGE_500_DEG);
     mpu1.setFilterBandwidth(MPU6050_BAND_21_HZ);
-    Serial.println("✅ MPU-6050 #1 (0x68) INITIALIZED SUCCESSFULLY!");
+    Serial.println("MPU-6050 #1 (0x68) INITIALIZED SUCCESSFULLY!");
   } else {
-    Serial.println("⚠️ MPU-6050 #1 (0x68) not ready.");
+    Serial.println("MPU-6050 #1 (0x68) not ready.");
   }
 
   // Try initializing MPU #2 (0x69)
@@ -91,9 +91,9 @@ void setup() {
     mpu2.setAccelerometerRange(MPU6050_RANGE_2_G);
     mpu2.setGyroRange(MPU6050_RANGE_500_DEG);
     mpu2.setFilterBandwidth(MPU6050_BAND_21_HZ);
-    Serial.println("✅ MPU-6050 #2 (0x69) INITIALIZED SUCCESSFULLY!");
+    Serial.println(" MPU-6050 #2 (0x69) INITIALIZED SUCCESSFULLY!");
   } else {
-    Serial.println("ℹ️ MPU-6050 #2 (0x69) not connected (Normal if using 1 sensor).");
+    Serial.println("ℹMPU-6050 #2 (0x69) not connected (Normal if using 1 sensor).");
   }
 
   Serial.println("\nStarting live readings in 2 seconds...");
@@ -108,11 +108,11 @@ void loop() {
     scanI2C();
     if (mpu1.begin(0x68)) {
       has_mpu1 = true;
-      Serial.println("✅ MPU-6050 #1 (0x68) CONNECTED!");
+      Serial.println("MPU-6050 #1 (0x68) CONNECTED!");
     }
     if (mpu2.begin(0x69)) {
       has_mpu2 = true;
-      Serial.println("✅ MPU-6050 #2 (0x69) CONNECTED!");
+      Serial.println("MPU-6050 #2 (0x69) CONNECTED!");
     }
     return;
   }

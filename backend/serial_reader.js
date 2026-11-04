@@ -11,8 +11,25 @@
 const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
 
+// ANSI Color Codes
+const RESET    = '\x1b[0m';
+const BOLD     = '\x1b[1m';
+const DIM      = '\x1b[2m';
+const RED      = '\x1b[31m';
+const GREEN    = '\x1b[32m';
+const YELLOW   = '\x1b[33m';
+const BLUE     = '\x1b[34m';
+const MAGENTA  = '\x1b[35m';
+const CYAN     = '\x1b[36m';
+const BG_RED   = '\x1b[41m\x1b[37m\x1b[1m';
+
+// Helper to format values in yellow
+function fmtVal(val) {
+  return `${YELLOW}${(val ?? 0).toFixed(2)}g${RESET}`;
+}
+
 // Config
-const DEFAULT_PORT = process.argv[2] || 'COM6'; // e.g. node serial_reader.js COM6
+const DEFAULT_PORT = process.argv[2] || 'COM6';
 const BAUD_RATE    = 115200;
 const BACKEND_URL  = process.env.BACKEND_URL || process.argv[3] || 'https://shm-v5rg.onrender.com/api/sensor-data';
 
@@ -28,12 +45,12 @@ async function startBridge() {
     const portExists = ports.some((p) => p.path.toUpperCase() === targetPort.toUpperCase());
 
     if (!portExists && ports.length > 0) {
-      console.log(`⚠️ Port ${targetPort} not found in available ports:`);
-      ports.forEach((p) => console.log(`   - ${p.path} (${p.manufacturer || 'USB Serial'})`));
+      console.log(`${YELLOW}⚠️ Port ${targetPort} not found in available ports:${RESET}`);
+      ports.forEach((p) => console.log(`   - ${CYAN}${p.path}${RESET} (${p.manufacturer || 'USB Serial'})`));
       // Auto-fallback if only 1 port exists
       if (ports.length === 1) {
         targetPort = ports[0].path;
-        console.log(`👉 Auto-selecting available port: ${targetPort}`);
+        console.log(`${GREEN}👉 Auto-selecting available port: ${targetPort}${RESET}`);
       }
     }
   } catch (e) {
@@ -50,17 +67,17 @@ async function startBridge() {
 
   port.open((err) => {
     if (err) {
-      console.error(`\n❌ Cannot open ${targetPort}: ${err.message}`);
-      console.error('   1. Check if the port is correct (e.g. node serial_reader.js COM11)');
-      console.error('   2. IMPORTANT: Is the Arduino Serial Monitor closed?');
+      console.error(`\n${RED}${BOLD}❌ Cannot open ${targetPort}: ${err.message}${RESET}`);
+      console.error(`   ${YELLOW}1. Check if the port is correct (e.g. node serial_reader.js COM11)${RESET}`);
+      console.error(`   ${YELLOW}2. IMPORTANT: Is the Arduino Serial Monitor closed?${RESET}`);
       process.exit(1);
     }
-    console.log('═══════════════════════════════════════════════════════');
-    console.log(`  SHM USB Serial Bridge ACTIVE: ${targetPort} @ ${BAUD_RATE}`);
-    console.log(`  Forwarding live data to: ${BACKEND_URL}`);
-    console.log('  Live Vercel Dashboard:   https://shm-kohl.vercel.app');
-    console.log('  Post-Event Report:       https://shm-kohl.vercel.app/post-analysis');
-    console.log('═══════════════════════════════════════════════════════');
+    console.log(`${CYAN}═══════════════════════════════════════════════════════${RESET}`);
+    console.log(`  ${BOLD}SHM USB Serial Bridge ACTIVE:${RESET} ${GREEN}${targetPort}${RESET} @ ${YELLOW}${BAUD_RATE}${RESET}`);
+    console.log(`  Forwarding live data to: ${DIM}${BACKEND_URL}${RESET}`);
+    console.log(`  Live Vercel Dashboard:   ${CYAN}https://shm-kohl.vercel.app${RESET}`);
+    console.log(`  Post-Event Report:       ${CYAN}https://shm-kohl.vercel.app/post-analysis${RESET}`);
+    console.log(`${CYAN}═══════════════════════════════════════════════════════${RESET}`);
   });
 
   let warnedNonJson = false;
@@ -69,10 +86,10 @@ async function startBridge() {
     if (!raw) return;
     if (!raw.startsWith('{')) {
       if (!warnedNonJson) {
-        console.log(`ℹ️ [ESP32 Serial Output]: "${raw}"`);
+        console.log(`${DIM}ℹ️ [ESP32 Serial Output]: "${raw}"${RESET}`);
         if (raw.includes('HTTP') || raw.includes('5000')) {
-          console.log('\n⚠️ Notice: ESP32 has an old WiFi firmware loaded!');
-          console.log('   👉 Please open backend/esp32_serial_firmware.ino in Arduino IDE and click Upload (Ctrl+U) to flash USB streaming mode.\n');
+          console.log(`\n${YELLOW}⚠️ Notice: ESP32 has an old WiFi firmware loaded!${RESET}`);
+          console.log(`   👉 Please open backend/esp32_serial_firmware.ino in Arduino IDE and click Upload (Ctrl+U) to flash USB streaming mode.\n`);
           warnedNonJson = true;
         }
       }
@@ -87,7 +104,7 @@ async function startBridge() {
     }
 
     if (data.status === 'ready') {
-      console.log('✅ ESP32 handshake received — sensor streaming active!\n');
+      console.log(`${GREEN}${BOLD}✅ ESP32 handshake received — sensor streaming active!${RESET}\n`);
       return;
     }
 
@@ -110,21 +127,23 @@ async function startBridge() {
       const now = Date.now();
       // Log summary once every second
       if (now - lastStatus >= 1000) {
-        const v1 = data.sw420_1 ? '🔴 VIB' : '⚪ IDLE';
-        const v2 = data.sw420_2 ? '🔴 VIB' : '⚪ IDLE';
-        console.log(
-          `[📦 ${packetCount} pkts] ` +
-          `B1(X=${(data.accel_x_1 ?? 0).toFixed(2)}g Y=${(data.accel_y_1 ?? 0).toFixed(2)}g Z=${(data.accel_z_1 ?? 0).toFixed(2)}g | ${v1})  ` +
-          `B2(X=${(data.accel_x_2 ?? 0).toFixed(2)}g Y=${(data.accel_y_2 ?? 0).toFixed(2)}g Z=${(data.accel_z_2 ?? 0).toFixed(2)}g | ${v2})`
-        );
+        // High-visibility status indicator: Red badge for vibration, green for idle
+        const v1 = data.sw420_1 ? `${BG_RED} ◈ VIB ${RESET}` : `${GREEN}○ IDLE${RESET}`;
+        const v2 = data.sw420_2 ? `${BG_RED} ◈ VIB ${RESET}` : `${GREEN}○ IDLE${RESET}`;
+
+        const pkts = `${DIM}[📦 ${packetCount} pkts]${RESET}`;
+        const b1 = `${CYAN}${BOLD}B1${RESET}(X=${fmtVal(data.accel_x_1)} Y=${fmtVal(data.accel_y_1)} Z=${fmtVal(data.accel_z_1)} | ${v1})`;
+        const b2 = `${MAGENTA}${BOLD}B2${RESET}(X=${fmtVal(data.accel_x_2)} Y=${fmtVal(data.accel_y_2)} Z=${fmtVal(data.accel_z_2)} | ${v2})`;
+
+        console.log(`${pkts} ${b1}  ${b2}`);
         lastStatus = now;
       }
     });
   });
 
-  port.on('error', (err) => console.error(`[PORT ERR] ${err.message}`));
+  port.on('error', (err) => console.error(`\n${RED}[PORT ERR] ${err.message}${RESET}`));
   port.on('close', () => {
-    console.log(`\nPort closed. Total packets received: ${packetCount}`);
+    console.log(`\n${YELLOW}Port closed. Total packets received: ${packetCount}${RESET}`);
     process.exit(0);
   });
 }

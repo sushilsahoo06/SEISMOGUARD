@@ -5,6 +5,10 @@ const alertController = require('../controllers/alertController');
 // 1. Broadcast Emergency Evacuation (Calling + SMS + Relatives)
 router.post('/broadcast', alertController.broadcastEmergencyEvacuation);
 
+// 1B. Autonomous Vibration Dispatch Config & Toggle
+router.get('/auto-dispatch-status', alertController.getAutoDispatchStatus);
+router.post('/auto-dispatch-toggle', alertController.toggleAutoDispatch);
+
 // 2. Direct Test Calls (Verifies Twilio Voice Calling + Hangup)
 router.post('/test-call', alertController.testCall);
 

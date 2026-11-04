@@ -1,143 +1,241 @@
 const db = require('../config/db');
 const twilioService = require('../services/twilioService');
 
-// 1. Broadcast Emergency Evacuation (Voice Call + Occupant SMS + Relative Notifications)
-exports.broadcastEmergencyEvacuation = async (req, res) => {
-  try {
-    const { building_id, test_mode = false } = req.body;
+// In-Memory Autonomous Trigger Configuration
+let autoDispatchConfig = {
+  enabled: false,
+  lastTriggeredAt: null,
+  cooldownMs: 60 * 1000, // 60 seconds cooldown to avoid duplicate calls while continuous shaking occurs
+  targetBuilding: 'All',
+};
 
-    // Fetch all occupants who are still INSIDE the building
-    let query = `SELECT * FROM building_occupants WHERE status = 'Inside Building'`;
-    const params = [];
+/**
+ * Core Emergency Broadcast Dispatcher
+ * Dispatches:
+ * 1. Twilio Automated Voice Call to Occupant (with auto-cut on message completion)
+ * 2. Twilio Emergency Evacuation SMS to Occupant ("Me")
+ * 3. Twilio WhatsApp Alert to Occupant ("Me")
+ * 4. Twilio Earthquake Advisory SMS to Registered Family Member / Relative ("Family")
+ */
+async function executeEmergencyBroadcast({ building_id = 'All', source = 'Manual' }) {
+  let query = `SELECT * FROM building_occupants WHERE status = 'Inside Building'`;
+  const params = [];
 
-    if (building_id && building_id !== 'All') {
-      params.push(building_id);
-      query += ` AND building_id = $1`;
+  if (building_id && building_id !== 'All') {
+    params.push(building_id);
+    query += ` AND building_id = $1`;
+  }
+
+  const result = await db.query(query, params);
+  const occupantsInside = result.rows;
+
+  if (occupantsInside.length === 0) {
+    return {
+      status: 'notice',
+      message: 'No occupants are currently marked as "Inside Building". All residents have already evacuated safely!',
+      totalAlerted: 0,
+      details: [],
+    };
+  }
+
+  const results = [];
+  let callsCount = 0;
+  let smsCount = 0;
+  let relativesCount = 0;
+
+  for (const occ of occupantsInside) {
+    const occupantLog = {
+      occupantId: occ.id,
+      name: occ.name,
+      phone: occ.phone,
+      building: occ.building_id,
+      room: occ.room_number,
+      source,
+      callStatus: 'Pending',
+      smsStatus: 'Pending',
+      whatsappStatus: 'Pending',
+      relativeStatus: 'None',
+    };
+
+    // ── A. Trigger Voice Call to Occupant (Auto-hangup after warning) ──────
+    try {
+      const callRes = await twilioService.makeEmergencyCall(occ);
+      occupantLog.callStatus = 'Dialed (SID: ' + callRes.sid + ')';
+      callsCount++;
+
+      await db.query(`
+        INSERT INTO alert_logs 
+        (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body, twilio_sid)
+        VALUES ($1, $2, $3, 'Occupant', 'Voice Call', 'Dispatched', $4, $5);
+      `, [occ.id, occ.name, occ.phone, `Automated Voice Call [${source}]: Earthquake warning in ${occ.building_id}`, callRes.sid]);
+    } catch (callErr) {
+      occupantLog.callStatus = 'Call Notice: ' + callErr.message;
+      await db.query(`
+        INSERT INTO alert_logs 
+        (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body)
+        VALUES ($1, $2, $3, 'Occupant', 'Voice Call', 'Failed', $4);
+      `, [occ.id, occ.name, occ.phone, callErr.message]);
     }
 
-    const result = await db.query(query, params);
-    const occupantsInside = result.rows;
+    // ── B. Trigger Direct Resident Evacuation SMS (Me) ──────────────────
+    try {
+      const smsRes = await twilioService.sendOccupantSMS(occ);
+      occupantLog.smsStatus = 'Sent (SID: ' + smsRes.sid + ')';
+      smsCount++;
 
-    if (occupantsInside.length === 0) {
-      return res.json({
-        status: 'notice',
-        message: 'No occupants are currently marked as "Inside Building". All residents have already evacuated safely!',
-        totalAlerted: 0,
-      });
+      await db.query(`
+        INSERT INTO alert_logs 
+        (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body, twilio_sid)
+        VALUES ($1, $2, $3, 'Occupant', 'SMS', 'Dispatched', $4, $5);
+      `, [occ.id, occ.name, occ.phone, smsRes.body, smsRes.sid]);
+    } catch (smsErr) {
+      occupantLog.smsStatus = 'SMS Notice: ' + smsErr.message;
+      await db.query(`
+        INSERT INTO alert_logs 
+        (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body)
+        VALUES ($1, $2, $3, 'Occupant', 'SMS', 'Failed', $4);
+      `, [occ.id, occ.name, occ.phone, smsErr.message]);
     }
 
-    const results = [];
-    let callsCount = 0;
-    let smsCount = 0;
-    let relativesCount = 0;
+    // ── B2. Trigger WhatsApp Alert to Occupant (Me) ───────────────────────
+    try {
+      const waMsg = `🚨 CRITICAL EMERGENCY ALERT: Earthquake detected in ${occ.building_id || 'Building 1'}, ${occ.room_number || ''}! Please evacuate immediately via stairwells! Do not use elevators.`;
+      const waRes = await twilioService.sendWhatsAppAlert(occ.phone, waMsg);
+      occupantLog.whatsappStatus = 'Sent (SID: ' + waRes.sid + ')';
+      await db.query(`
+        INSERT INTO alert_logs 
+        (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body, twilio_sid)
+        VALUES ($1, $2, $3, 'Occupant', 'WhatsApp', 'Dispatched', $4, $5);
+      `, [occ.id, occ.name, occ.phone, waMsg, waRes.sid]);
+    } catch (waErr) {
+      occupantLog.whatsappStatus = 'WhatsApp: ' + waErr.message;
+    }
 
-    for (const occ of occupantsInside) {
-      const occupantLog = {
-        occupantId: occ.id,
-        name: occ.name,
-        phone: occ.phone,
-        building: occ.building_id,
-        room: occ.room_number,
-        callStatus: 'Pending',
-        smsStatus: 'Pending',
-        relativeStatus: 'None',
-      };
-
-      // ── A. Trigger Voice Call (Auto-hangup after warning) ──────
+    // ── C. Trigger Relative / Family Member Advisory SMS (Family) ─────────
+    if (occ.relative_phone) {
       try {
-        const callRes = await twilioService.makeEmergencyCall(occ);
-        occupantLog.callStatus = 'Dialed (SID: ' + callRes.sid + ')';
-        callsCount++;
+        const relRes = await twilioService.sendRelativeNotification(occ);
+        if (relRes) {
+          occupantLog.relativeStatus = `Sent to ${occ.relative_name} (SID: ${relRes.sid})`;
+          relativesCount++;
 
-        await db.query(`
-          INSERT INTO alert_logs 
-          (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body, twilio_sid)
-          VALUES ($1, $2, $3, 'Occupant', 'Voice Call', 'Dispatched', $4, $5);
-        `, [occ.id, occ.name, occ.phone, `Automated Voice Call: Earthquake warning in ${occ.building_id}`, callRes.sid]);
-      } catch (callErr) {
-        occupantLog.callStatus = 'Call Failed: ' + callErr.message;
-        await db.query(`
-          INSERT INTO alert_logs 
-          (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body)
-          VALUES ($1, $2, $3, 'Occupant', 'Voice Call', 'Failed', $4);
-        `, [occ.id, occ.name, occ.phone, callErr.message]);
-      }
-
-      // ── B. Trigger Direct Resident Evacuation SMS ──────────────
-      try {
-        const smsRes = await twilioService.sendOccupantSMS(occ);
-        occupantLog.smsStatus = 'Sent (SID: ' + smsRes.sid + ')';
-        smsCount++;
-
-        await db.query(`
-          INSERT INTO alert_logs 
-          (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body, twilio_sid)
-          VALUES ($1, $2, $3, 'Occupant', 'SMS', 'Dispatched', $4, $5);
-        `, [occ.id, occ.name, occ.phone, smsRes.body, smsRes.sid]);
-      } catch (smsErr) {
-        occupantLog.smsStatus = 'SMS Failed: ' + smsErr.message;
-        await db.query(`
-          INSERT INTO alert_logs 
-          (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body)
-          VALUES ($1, $2, $3, 'Occupant', 'SMS', 'Failed', $4);
-        `, [occ.id, occ.name, occ.phone, smsErr.message]);
-      }
-
-      // ── B2. Optional WhatsApp Alert to Occupant ───────────────
-      try {
-        const waMsg = `🚨 CRITICAL EMERGENCY ALERT: Earthquake detected in ${occ.building_id || 'Building 1'}! Please evacuate the building immediately via stairwells!`;
-        const waRes = await twilioService.sendWhatsAppAlert(occ.phone, waMsg);
-        occupantLog.whatsappStatus = 'Sent (SID: ' + waRes.sid + ')';
-        await db.query(`
-          INSERT INTO alert_logs 
-          (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body, twilio_sid)
-          VALUES ($1, $2, $3, 'Occupant', 'WhatsApp', 'Dispatched', $4, $5);
-        `, [occ.id, occ.name, occ.phone, waMsg, waRes.sid]);
-      } catch (waErr) {
-        occupantLog.whatsappStatus = 'WhatsApp: ' + waErr.message;
-      }
-
-      // ── C. Trigger Relative / Family Member Notification ──────
-      if (occ.relative_phone) {
-        try {
-          const relRes = await twilioService.sendRelativeNotification(occ);
-          if (relRes) {
-            occupantLog.relativeStatus = `Sent to ${occ.relative_name} (SID: ${relRes.sid})`;
-            relativesCount++;
-
-            await db.query(`
-              INSERT INTO alert_logs 
-              (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body, twilio_sid)
-              VALUES ($1, $2, $3, 'Relative', 'SMS', 'Dispatched', $4, $5);
-            `, [occ.id, occ.relative_name, occ.relative_phone, relRes.body, relRes.sid]);
-          }
-        } catch (relErr) {
-          occupantLog.relativeStatus = 'Relative SMS Failed: ' + relErr.message;
           await db.query(`
             INSERT INTO alert_logs 
-            (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body)
-            VALUES ($1, $2, $3, 'Relative', 'SMS', 'Failed', $4);
-          `, [occ.id, occ.relative_name, occ.relative_phone, relErr.message]);
+            (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body, twilio_sid)
+            VALUES ($1, $2, $3, 'Relative', 'SMS', 'Dispatched', $4, $5);
+          `, [occ.id, occ.relative_name, occ.relative_phone, relRes.body, relRes.sid]);
         }
+      } catch (relErr) {
+        occupantLog.relativeStatus = 'Relative SMS Notice: ' + relErr.message;
+        await db.query(`
+          INSERT INTO alert_logs 
+          (occupant_id, recipient_name, recipient_phone, recipient_type, alert_type, status, message_body)
+          VALUES ($1, $2, $3, 'Relative', 'SMS', 'Failed', $4);
+        `, [occ.id, occ.relative_name, occ.relative_phone, relErr.message]);
       }
-
-      results.push(occupantLog);
     }
 
-    res.json({
-      status: 'success',
-      message: `Emergency evacuation broadcast completed! Alerted ${occupantsInside.length} occupants inside building.`,
-      summary: {
-        totalOccupantsInside: occupantsInside.length,
-        callsDispatched: callsCount,
-        smsDispatched: smsCount,
-        relativesNotified: relativesCount,
-      },
-      details: results,
-    });
+    results.push(occupantLog);
+  }
+
+  return {
+    status: 'success',
+    message: `Emergency evacuation broadcast completed! Alerted ${occupantsInside.length} occupants inside building and their emergency family contacts.`,
+    summary: {
+      totalOccupantsInside: occupantsInside.length,
+      callsDispatched: callsCount,
+      smsDispatched: smsCount,
+      relativesNotified: relativesCount,
+      source,
+    },
+    details: results,
+  };
+}
+
+// 1. Manual Broadcast Emergency Evacuation
+exports.broadcastEmergencyEvacuation = async (req, res) => {
+  try {
+    const { building_id = 'All' } = req.body;
+    const result = await executeEmergencyBroadcast({ building_id, source: 'Manual Web Dashboard' });
+    res.json(result);
   } catch (err) {
     console.error('Error during broadcast:', err);
     res.status(500).json({ error: 'Emergency broadcast failed: ' + err.message });
+  }
+};
+
+// 1B. Autonomous Vibration Trigger Status
+exports.getAutoDispatchStatus = (req, res) => {
+  const now = Date.now();
+  const elapsed = autoDispatchConfig.lastTriggeredAt ? now - autoDispatchConfig.lastTriggeredAt : null;
+  const remainingMs = elapsed !== null && elapsed < autoDispatchConfig.cooldownMs ? autoDispatchConfig.cooldownMs - elapsed : 0;
+
+  res.json({
+    enabled: autoDispatchConfig.enabled,
+    targetBuilding: autoDispatchConfig.targetBuilding,
+    lastTriggeredAt: autoDispatchConfig.lastTriggeredAt,
+    cooldownRemainingSec: Math.ceil(remainingMs / 1000),
+  });
+};
+
+// 1C. Toggle Autonomous Vibration Trigger Mode
+exports.toggleAutoDispatch = (req, res) => {
+  const { enabled, targetBuilding = 'All' } = req.body;
+  if (enabled !== undefined) {
+    autoDispatchConfig.enabled = Boolean(enabled);
+  } else {
+    autoDispatchConfig.enabled = !autoDispatchConfig.enabled;
+  }
+  if (targetBuilding) autoDispatchConfig.targetBuilding = targetBuilding;
+
+  res.json({
+    status: 'success',
+    message: autoDispatchConfig.enabled
+      ? '⚡ Autonomous Earthquake Alert ARMED: Calls and SMS will automatically trigger when physical vibration is detected!'
+      : 'Autonomous alert disarmed. Manual confirmation required.',
+    enabled: autoDispatchConfig.enabled,
+    targetBuilding: autoDispatchConfig.targetBuilding,
+  });
+};
+
+// 1D. Real-Time Autonomous Trigger Evaluator (Called whenever sensor data arrives)
+exports.checkAndTriggerAutonomousAlert = async (record, io) => {
+  if (!autoDispatchConfig.enabled) return;
+
+  const hasVibration = (
+    record.sw420_1 === 1 ||
+    record.sw420_2 === 1 ||
+    (record.alarm_1 && record.alarm_1 >= 1) ||
+    (record.alarm_2 && record.alarm_2 >= 1) ||
+    (record.magnitude_1 && record.magnitude_1 > 1.35) ||
+    (record.magnitude_2 && record.magnitude_2 > 1.35)
+  );
+
+  if (!hasVibration) return;
+
+  const now = Date.now();
+  if (autoDispatchConfig.lastTriggeredAt && (now - autoDispatchConfig.lastTriggeredAt < autoDispatchConfig.cooldownMs)) {
+    return; // Inside cooldown period to avoid duplicate calling while shaking
+  }
+
+  autoDispatchConfig.lastTriggeredAt = now;
+  console.log('🚨 [AUTONOMOUS VIBRATION TRIGGER] Seismic shaking detected! Dispatching emergency calls & SMS automatically...');
+
+  try {
+    const result = await executeEmergencyBroadcast({
+      building_id: autoDispatchConfig.targetBuilding,
+      source: 'Autonomous Vibration Trigger (SW-420 / ADXL345)',
+    });
+
+    if (io) {
+      io.emit('autonomousAlertDispatched', {
+        message: '⚡ Seismic vibration detected! Emergency calls & SMS automatically dispatched to occupants and relatives.',
+        result,
+        timestamp: new Date(),
+      });
+    }
+  } catch (err) {
+    console.error('Autonomous broadcast failed:', err.message);
   }
 };
 
@@ -214,3 +312,5 @@ exports.getAlertLogs = async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve alert logs' });
   }
 };
+
+module.exports.executeEmergencyBroadcast = executeEmergencyBroadcast;

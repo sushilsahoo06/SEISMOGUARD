@@ -7,6 +7,7 @@ require('dotenv').config();
 const sensorRoutes = require('./routes/sensorRoutes');
 const occupantRoutes = require('./routes/occupantRoutes');
 const alertRoutes = require('./routes/alertRoutes');
+const alertController = require('./controllers/alertController');
 
 const app = express();
 const server = http.createServer(app);
@@ -35,6 +36,8 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/sensor-data', (req, res) => {
   if (req.newSensorRecord) {
     io.emit('newSensorData', req.newSensorRecord);
+    // ⚡ Autonomous Life-Safety Trigger: checks vibration threshold without manual button click!
+    alertController.checkAndTriggerAutonomousAlert(req.newSensorRecord, io);
   }
 });
 

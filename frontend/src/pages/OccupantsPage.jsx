@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
 import './OccupantsPage.css';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://shm-v5rg.onrender.com';
@@ -31,6 +32,12 @@ export default function OccupantsPage() {
   const [broadcastBuilding, setBroadcastBuilding] = useState('All');
   const [broadcasting, setBroadcasting] = useState(false);
   const [broadcastResult, setBroadcastResult] = useState(null);
+
+  // Autonomous Vibration-Trigger State (No manual confirmation needed)
+  const [autoArmed, setAutoArmed] = useState(false);
+  const [autoCooldownSec, setAutoCooldownSec] = useState(0);
+  const [autonomousNotice, setAutonomousNotice] = useState(null);
+  const [liveVibrating, setLiveVibrating] = useState(false);
 
   // Quick Test Modal / Controls
   const [testPhone, setTestPhone] = useState('+91');
@@ -81,6 +88,61 @@ export default function OccupantsPage() {
       setLoadingLogs(false);
     }
   };
+
+  // Load Autonomous Vibration Mode Status
+  const loadAutoDispatchStatus = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/alerts/auto-dispatch-status`);
+      const data = await res.json();
+      setAutoArmed(Boolean(data.enabled));
+      setAutoCooldownSec(data.cooldownRemainingSec || 0);
+    } catch (err) {
+      console.error('Failed to load auto dispatch status:', err);
+    }
+  };
+
+  // Toggle Autonomous Vibration Mode (Bypasses manual confirm button)
+  const handleToggleAuto = async () => {
+    try {
+      const nextState = !autoArmed;
+      const res = await fetch(`${BACKEND_URL}/api/alerts/auto-dispatch-toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: nextState, targetBuilding: broadcastBuilding }),
+      });
+      const data = await res.json();
+      setAutoArmed(Boolean(data.enabled));
+    } catch (err) {
+      console.error('Failed to toggle auto dispatch:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadOccupants();
+    loadAlertLogs();
+    loadAutoDispatchStatus();
+
+    // Listen for live autonomous alert events from socket
+    const socket = io(BACKEND_URL);
+    socket.on('autonomousAlertDispatched', (payload) => {
+      setAutonomousNotice(
+        `⚡ VIBRATION DETECTED! Emergency calls (auto-cut) & SMS automatically dispatched to both residents and family contacts!`
+      );
+      loadOccupants();
+      loadAlertLogs();
+      loadAutoDispatchStatus();
+      setTimeout(() => setAutonomousNotice(null), 12000);
+    });
+
+    socket.on('newSensorData', (r) => {
+      if (r.sw420_1 === 1 || r.sw420_2 === 1 || (r.magnitude_1 && r.magnitude_1 > 1.35)) {
+        setLiveVibrating(true);
+        setTimeout(() => setLiveVibrating(false), 2000);
+      }
+    });
+
+    return () => socket.disconnect();
+  }, []);
 
   useEffect(() => {
     loadOccupants();
@@ -399,11 +461,42 @@ export default function OccupantsPage() {
           <p>Manage building occupants, emergency family contacts, and dispatch automated Twilio voice calls, SMS, and WhatsApp alerts.</p>
         </div>
         <div className="header-actions">
+          <button
+            type="button"
+            className={`btn-auto-pill ${autoArmed ? 'pill-auto-armed' : 'pill-auto-off'}`}
+            onClick={handleToggleAuto}
+            title="Toggle autonomous emergency dispatch on vibration"
+          >
+            {autoArmed ? '⚡ Auto-Dispatch on Vibration: ARMED (ON) 🔴' : '⚡ Auto-Dispatch: OFF ⚪'}
+          </button>
           <button className="btn-broadcast-main" onClick={() => setShowBroadcastModal(true)}>
             🚨 TRIGGER EVACUATION BROADCAST
           </button>
         </div>
       </div>
+
+      {/* ── Real-Time Autonomous Live Incident Banners ────────────── */}
+      {autonomousNotice && (
+        <div className="autonomous-live-alert-banner">
+          <span className="pulse-icon">🚨</span>
+          <div>
+            <strong>AUTONOMOUS EMERGENCY ALERT DISPATCHED!</strong>
+            <div>{autonomousNotice}</div>
+          </div>
+        </div>
+      )}
+
+      {autoArmed && (
+        <div className="auto-armed-status-strip">
+          <span className="pulse-dot">🔴</span>
+          <span>
+            <strong>AUTONOMOUS LIFE-SAFETY MODE ARMED:</strong> Monitoring live vibration from SW-420 & ADXL345 sensors.
+            {liveVibrating
+              ? ' 💥 SEISMIC SHAKING DETECTED! Processing alert dispatch...'
+              : ' No manual button click needed — calls and messages will dispatch automatically to you and your family the instant shaking begins!'}
+          </span>
+        </div>
+      )}
 
       {/* ── KPI Metric Badges ─────────────────────────────────────── */}
       <div className="metrics-row">
@@ -860,6 +953,39 @@ export default function OccupantsPage() {
                 </ul>
               </div>
 
+              {/* ── AUTONOMOUS VIBRATION DISPATCH TOGGLE (NO CONFIRM BUTTON NEEDED) ── */}
+              <div className={`autonomous-modal-card ${autoArmed ? 'auto-card-active' : 'auto-card-idle'}`}>
+                <div className="auto-modal-header">
+                  <div className="auto-modal-text">
+                    <div className="auto-modal-badge">
+                      {autoArmed ? '⚡ AUTONOMOUS DISPATCH: ON (ARMED)' : '⚪ AUTONOMOUS DISPATCH: OFF'}
+                    </div>
+                    <h4>Auto-Dispatch on Vibration (Bypasses Confirm Button)</h4>
+                    <p>
+                      When this is <strong>ON</strong>, you <strong>do not need to click the Confirm Dispatch button</strong>.
+                      As soon as physical vibration is detected by the ESP32 (SW-420 or ADXL345), the system will automatically call and text <strong>both you and your family contacts</strong>!
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className={`btn-auto-toggle-switch ${autoArmed ? 'btn-switch-on' : 'btn-switch-off'}`}
+                    onClick={handleToggleAuto}
+                  >
+                    {autoArmed ? '⚡ ARMED (ON)' : '⚪ TURN ON'}
+                  </button>
+                </div>
+
+                {autoArmed && (
+                  <div className="auto-armed-callout">
+                    <span className="live-radar-dot">🔴</span>
+                    <div>
+                      <strong>MANUAL CONFIRMATION BYPASSED:</strong> The system is actively waiting for vibration.
+                      Start shaking the building or sensors to trigger automated calls and messages immediately!
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="form-group" style={{ marginTop: '16px' }}>
                 <label><strong>Target Building:</strong></label>
                 <select
@@ -900,11 +1026,15 @@ export default function OccupantsPage() {
               </button>
               <button
                 type="button"
-                className="btn-danger-execute"
+                className={`btn-danger-execute ${autoArmed ? 'btn-pulse-glow' : ''}`}
                 onClick={handleBroadcast}
                 disabled={broadcasting}
               >
-                {broadcasting ? '⏳ Dispatching Emergency Calls & SMS...' : '🚨 Confirm & Dispatch Emergency Broadcast'}
+                {broadcasting
+                  ? '⏳ Dispatching Emergency Calls & SMS...'
+                  : autoArmed
+                    ? '⚡ Armed on Vibration (Or Click to Dispatch Manually Now)'
+                    : '🚨 Confirm & Dispatch Emergency Broadcast'}
               </button>
             </div>
           </div>

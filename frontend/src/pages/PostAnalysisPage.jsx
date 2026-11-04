@@ -61,6 +61,8 @@ function cleanReportText(text) {
 }
 
 export default function PostAnalysisPage() {
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -84,12 +86,12 @@ export default function PostAnalysisPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('http://localhost:5000/api/sensor-data/analysis');
+      const res = await fetch(`${API_BASE_URL}/api/sensor-data/analysis`);
       const json = await res.json();
       setData(json);
     } catch (err) {
       console.error(err);
-      setError('Could not connect to backend server. Make sure port 5000 is running.');
+      setError(`Could not connect to backend server (${API_BASE_URL}). Make sure it is running.`);
     } finally {
       setLoading(false);
     }
@@ -98,7 +100,7 @@ export default function PostAnalysisPage() {
   // Background quiet fetch
   const fetchAnalysisQuiet = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/sensor-data/analysis');
+      const res = await fetch(`${API_BASE_URL}/api/sensor-data/analysis`);
       const json = await res.json();
       if (json && json.hasData) {
         setData(json);
@@ -111,7 +113,7 @@ export default function PostAnalysisPage() {
   const handleClearSession = async () => {
     if (!window.confirm('Are you sure you want to clear past earthquake data and start a fresh test?')) return;
     try {
-      await fetch('http://localhost:5000/api/sensor-data/session', { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/api/sensor-data/session`, { method: 'DELETE' });
       setAiReport(null);
       fetchAnalysis();
     } catch (err) {
@@ -124,7 +126,7 @@ export default function PostAnalysisPage() {
     if (!data || !data.hasData) return;
     try {
       setAiLoading(true);
-      const res = await fetch('http://localhost:5000/api/sensor-data/ai-report', {
+      const res = await fetch(`${API_BASE_URL}/api/sensor-data/ai-report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -158,7 +160,7 @@ export default function PostAnalysisPage() {
       // Auto-fetch or generate AI report if not yet generated
       try {
         setAiLoading(true);
-        const res = await fetch('http://localhost:5000/api/sensor-data/ai-report', {
+        const res = await fetch(`${API_BASE_URL}/api/sensor-data/ai-report`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ telemetry: data }),

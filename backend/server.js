@@ -9,10 +9,10 @@ const sensorRoutes = require('./routes/sensorRoutes');
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.io
+// Initialize Socket.io with open CORS for both local and deployed frontend
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173', // Vite default development URL
+    origin: '*',
     methods: ['GET', 'POST'],
   },
 });

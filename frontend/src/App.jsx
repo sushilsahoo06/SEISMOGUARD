@@ -7,7 +7,7 @@ import OrientationPage from './pages/OrientationPage';
 import PostAnalysisPage from './pages/PostAnalysisPage';
 import './App.css';
 
-const SOCKET_SERVER_URL = 'http://localhost:5000';
+const SOCKET_SERVER_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 const WINDOW = 80;
 
 // Sliding window push helper

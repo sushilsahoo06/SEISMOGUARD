@@ -276,8 +276,12 @@ void loop() {
   doc["alarm_1"]     = alarm1; // 0=Safe, 1=Warning, 2=Critical Collapse
   doc["alarm_2"]     = alarm2;
 
+  // ── 1. Always Stream JSON over USB Serial Cable for serial_reader.js ──
+  serializeJson(doc, Serial);
+  Serial.println();
+
 #ifdef MODE_WIFI
-  // Send over WiFi HTTP POST
+  // Optional: Send over WiFi HTTP POST if WiFi mode is active
   if (WiFi.status() == WL_CONNECTED) {
     String payload;
     serializeJson(doc, payload);
@@ -286,32 +290,9 @@ void loop() {
     http.begin(SERVER_URL);
     http.addHeader("Content-Type", "application/json");
     http.setTimeout(150);
-    int httpCode = http.POST(payload);
-
-    static unsigned long lastLog = 0;
-    static int pkts = 0;
-    pkts++;
-
-    if (millis() - lastLog >= 1000) {
-      lastLog = millis();
-      const char* st1 = alarm1 == 2 ? "🔴COLLAPSE" : alarm1 == 1 ? "🟡WARN" : "🟢SAFE";
-      const char* st2 = alarm2 == 2 ? "🔴COLLAPSE" : alarm2 == 1 ? "🟡WARN" : "🟢SAFE";
-
-      if (httpCode == 201) {
-        Serial.printf("📡 Pkts: %d | HTTP 201 | B1: %s (%.2fg) | B2: %s (%.2fg)\n",
-                      pkts, st1, x1, st2, x2);
-      } else {
-        Serial.printf("⚠️ [HTTP %d] Check server at %s\n", httpCode, SERVER_URL);
-      }
-    }
+    http.POST(payload);
     http.end();
-  } else {
-    WiFi.reconnect();
   }
-#else
-  // Stream directly over USB Cable
-  serializeJson(doc, Serial);
-  Serial.println();
 #endif
 
   long elapsed = millis() - startMs;

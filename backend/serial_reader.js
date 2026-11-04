@@ -58,13 +58,26 @@ async function startBridge() {
     console.log('═══════════════════════════════════════════════════════');
     console.log(`  SHM USB Serial Bridge ACTIVE: ${targetPort} @ ${BAUD_RATE}`);
     console.log(`  Forwarding live data to: ${BACKEND_URL}`);
-    console.log('  Open Web Dashboard at: http://localhost:5173');
+    console.log('  Live Vercel Dashboard:   https://shm-kohl.vercel.app');
+    console.log('  Post-Event Report:       https://shm-kohl.vercel.app/post-analysis');
     console.log('═══════════════════════════════════════════════════════');
   });
 
+  let warnedNonJson = false;
   parser.on('data', (line) => {
     const raw = line.trim();
-    if (!raw || !raw.startsWith('{')) return; // Ignore non-JSON lines
+    if (!raw) return;
+    if (!raw.startsWith('{')) {
+      if (!warnedNonJson) {
+        console.log(`ℹ️ [ESP32 Serial Output]: "${raw}"`);
+        if (raw.includes('HTTP') || raw.includes('5000')) {
+          console.log('\n⚠️ Notice: ESP32 has an old WiFi firmware loaded!');
+          console.log('   👉 Please open backend/esp32_serial_firmware.ino in Arduino IDE and click Upload (Ctrl+U) to flash USB streaming mode.\n');
+          warnedNonJson = true;
+        }
+      }
+      return;
+    }
 
     let data;
     try {

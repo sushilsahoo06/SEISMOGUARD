@@ -34,3 +34,4 @@ router.put('/:id', occupantController.updateOccupant);
 router.delete('/:id', occupantController.deleteOccupant);
 
 module.exports = router;
+

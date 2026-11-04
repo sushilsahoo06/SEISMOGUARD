@@ -1,10 +1,22 @@
 # 🏢 Structural Health Monitoring (SHM) & Seismic Early Warning System
 
-A full-stack, real-time IoT and civil engineering monitoring platform designed to analyze building structural behavior, detect seismic vibrations, and evaluate collapse risk during earthquakes.
+A full-stack, real-time IoT and civil engineering monitoring platform designed to analyze building structural behavior, detect seismic vibrations, evaluate collapse risks during earthquakes, and automatically trigger life-saving emergency phone calls, SMS, and WhatsApp alerts to residents and relatives.
 
 The system performs a live side-by-side comparative analysis between:
-* **Building 1 (Unprotected):** Standard rigid structure prone to resonant vibration and structural damage.
-* **Building 2 (Earthquake-Resistant):** Base-isolated / damped structure designed to attenuate ground motion.
+* **Building 1 (Unprotected):** Standard rigid fixed-base structure prone to resonant vibration, plastic hinge deformation, and structural collapse.
+* **Building 2 (Earthquake-Resistant):** Base-isolated / damped structure designed to attenuate ground shock and absorb seismic kinetic energy.
+
+---
+
+## 🌐 Live Cloud Deployments & Links
+
+| Service | Platform | Live URL | Description |
+| :--- | :--- | :--- | :--- |
+| **Frontend Web App** | **Vercel** | [https://shm-kohl.vercel.app](https://shm-kohl.vercel.app) | Live real-time oscilloscope, FFT spectrum & structural dashboard |
+| **Backend API Gateway** | **Render** | [https://shm-v5rg.onrender.com](https://shm-v5rg.onrender.com) | Node.js + Express + Socket.io + Twilio REST Server |
+| **Evacuation & Alerts Directory** | **Vercel** | [https://shm-kohl.vercel.app/occupants](https://shm-kohl.vercel.app/occupants) | Occupant directory, Excel bulk upload/download & Twilio broadcast |
+| **Post-Event Analysis Report** | **Vercel** | [https://shm-kohl.vercel.app/post-analysis](https://shm-kohl.vercel.app/post-analysis) | Printable PDF engineering safety report with dynamic curves |
+| **Cloud Timeseries DB** | **Neon** | PostgreSQL Serverless | Timeseries sensor records & occupant directory |
 
 ---
 
@@ -13,8 +25,8 @@ The system performs a live side-by-side comparative analysis between:
 ```
  ┌────────────────────────────────────────────────────────┐
  │                   HARDWARE LAYER                       │
- │  • ESP32 Dev Board                                     │
- │  • 2× ADXL345 3-Axis Accelerometers (I2C)              │
+ │  • ESP32 NodeMCU Dev Board                             │
+ │  • 2× ADXL345 3-Axis Accelerometers (I2C 100 Hz)       │
  │  • 2× SW-420 Vibration Switches (Digital Interrupts)   │
  │  • 2× Active Buzzers (Physical Audio Alarms)           │
  └──────────────────────────┬─────────────────────────────┘
@@ -22,29 +34,33 @@ The system performs a live side-by-side comparative analysis between:
             ┌───────────────┴───────────────┐
             │ Transmission Mode Selection   │
             ▼                               ▼
-    [ Wi-Fi HTTP POST ]             [ USB Serial Cable ]
-     (20 Hz / 50ms)                  (115200 Baud)
+    [ Option A: Wi-Fi Mode ]        [ Option B: USB Cable Mode ]
+     (20 Hz / 50ms HTTP POST)        (115200 Baud Serial Stream)
             │                               │
             │                               ▼
             │                     node serial_reader.js
+            │                     (Dual-forwarding bridge)
             │                               │
             └───────────────┬───────────────┘
                             ▼
  ┌────────────────────────────────────────────────────────┐
  │                    BACKEND LAYER                       │
- │  • Node.js & Express API (`/api/sensor-data`)          │
- │  • PostgreSQL (Cloud Neon DB) Timeseries Storage       │
+ │  • Render Cloud (`https://shm-v5rg.onrender.com`)      │
+ │  • Node.js & Express API Gateway                       │
  │  • Socket.io Low-Latency WebSocket Gateway             │
- │  • Civil Engineering Damage & Orientation Logic       │
+ │  • Neon PostgreSQL Timeseries & Occupants DB           │
+ │  • Twilio Automated Emergency Voice Calls & Auto-Cut   │
+ │  • Twilio Resident SMS, WhatsApp & Family Advisories   │
  └──────────────────────────┬─────────────────────────────┘
                             │
-                            ▼ WebSocket Broadcast
+                            ▼ WebSocket Broadcast (< 50ms)
  ┌────────────────────────────────────────────────────────┐
  │                   FRONTEND LAYER                       │
+ │  • Vercel Cloud (`https://shm-kohl.vercel.app`)        │
  │  • React 19 + Vite + Chart.js                          │
- │  • Real-Time Oscilloscope & Spectral Visualizations    │
- │  • Live Status: 🟢 Safe | 🟡 Warning | 🔴 Collapse Risk │
- │  • Historical CSV Export & Data Analytics              │
+ │  • Live Status: 🟢 Safe | 🟡 Warning | 🔴 Collapse     │
+ │  • Occupant Evacuation Center with Excel Import/Export │
+ │  • Automated PDF Civil Engineering Post-Analysis       │
  └────────────────────────────────────────────────────────┘
 ```
 
@@ -67,150 +83,138 @@ Both sensors share the same I2C data lines (`SDA` and `SCL`). Addresses are diff
 ### 2. SW-420 Vibration Sensors & Buzzers
 | Component | Signal Pin | ESP32 Pin | Function |
 | :--- | :--- | :--- | :--- |
-| **SW-420 #1 (Building 1)** | DO (Digital Out) | **GPIO 14** (or 25) | Hardware interrupt trigger |
-| **SW-420 #2 (Building 2)** | DO (Digital Out) | **GPIO 27** (or 26) | Hardware interrupt trigger |
-| **Buzzer #1 (Building 1)** | (+) Positive Pin | **GPIO 32** | Critical Collapse Alarm |
-| **Buzzer #2 (Building 2)** | (+) Positive Pin | **GPIO 33** | Secondary Alarm |
+| **SW-420 #1 (Building 1)** | DO (Digital Out) | **GPIO 25** (or 14) | Building 1 Vibration Trip |
+| **SW-420 #2 (Building 2)** | DO (Digital Out) | **GPIO 26** (or 27) | Building 2 Vibration Trip |
+| **Buzzer #1 (Building 1)** | (+) Positive Pin | **GPIO 32** | Critical Collapse Alarm (Active High) |
+| **Buzzer #2 (Building 2)** | (+) Positive Pin | **GPIO 33** | Secondary Alarm (Optional) |
 
 ---
 
-## ⚙️ How It Works (Civil Engineering & Data Processing)
+## 📟 Serial Monitor & Serial Reader Execution Guide
 
-1. **High-Frequency Sampling (20 Hz):**
-   * The ESP32 samples 3-axis acceleration $(a_x, a_y, a_z)$ and vibration pulses every **50 milliseconds**.
-2. **Orientation & Tilt Derivation:**
-   * Dynamic Shock Magnitude: $\text{Mag} = \sqrt{a_x^2 + a_y^2 + a_z^2}$
-   * P-Delta Tilt Drift:
-     $$\text{Roll} = \text{atan2}(a_y, a_z) \times \frac{180}{\pi}$$
-     $$\text{Pitch} = \text{atan2}(-a_x, \sqrt{a_y^2 + a_z^2}) \times \frac{180}{\pi}$$
-3. **Multi-Stage Collapse Evaluation:**
-   * 🟢 **Normal / Safe (Level 0):** Acceleration $< 0.35g$, Tilt $< 4^\circ$.
-   * 🟡 **Structural Warning (Level 1):** Moderate shaking ($0.35g - 0.8g$) or transient impact.
-   * 🔴 **Critical Collapse Risk (Level 2):** Permanent tilt $> 12^\circ$ or violent shaking $> 0.8g$ sustained for more than 3 seconds. Triggers onboard physical buzzers and dashboard emergency banners.
-4. **Instant WebSocket Broadcast:**
-   * Incoming packets are persisted in PostgreSQL and instantly broadcast via Socket.io to the React client with $< 50\,\text{ms}$ latency.
+You can run the ESP32 data stream via the **USB Serial Cable Bridge** or the **Arduino IDE Serial Monitor**:
 
----
+### Method 1: Running the USB Serial Bridge (`serial_reader.js`) — Recommended
 
-## 🚀 Execution & Setup Guide
+The `serial_reader.js` script bridges data directly from your USB cable to **both** your local server and your live Render backend so the deployed Vercel web app updates in real-time without Wi-Fi dropouts.
 
-### Prerequisites
-* [Node.js](https://nodejs.org/) (v18 or higher)
-* [Arduino IDE](https://www.arduino.cc/en/software) (with ESP32 board manager installed)
-* Active PostgreSQL database (Neon or local)
+1. **Upload Firmware in USB Serial Mode:**
+   - In [`backend/esp32_serial_firmware.ino`](file:///backend/esp32_serial_firmware.ino), make sure:
+     ```cpp
+     //#define MODE_WIFI
+     #define MODE_SERIAL
+     ```
+   - Connect ESP32 via USB and click **Upload** in Arduino IDE.
+   - **IMPORTANT:** Once uploaded, **close the Arduino IDE Serial Monitor** so the COM port is released.
 
----
-
-### Step 1: Configure & Run Backend Server
-
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create/verify your `.env` file in `backend/`:
-   ```env
-   PORT=5000
-   DATABASE_URL=postgresql://<user>:<password>@<neon-host>/neondb?sslmode=require
-   ```
-4. Run database migrations:
-   ```bash
-   node migrate.js
-   node migrate_sw420.js
-   ```
-5. Start the backend:
-   ```bash
-   npm start
-   # Server runs at http://localhost:5000
-   ```
-
----
-
-### Step 2: Configure & Run Frontend Dashboard
-
-1. Open a new terminal and navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Start the Vite development server:
-   ```bash
-   npm run dev
-   # Dashboard opens at http://localhost:5173
-   ```
-
----
-
-### Step 3: Flash Firmware to ESP32
-
-1. Open **Arduino IDE**.
-2. Install required libraries via **Sketch $\rightarrow$ Include Library $\rightarrow$ Manage Libraries**:
-   * `ArduinoJson` (by Benoit Blanchon)
-   * `Wire` (built-in)
-   * `WiFi` & `HTTPClient` (built-in for ESP32)
-3. Open [`backend/esp32_serial_firmware.ino`](file:///c:/Users/HP/OneDrive/ドキュメント/GitHub/shm/backend/esp32_serial_firmware.ino).
-
-#### Choose your transmission mode:
-
-#### Option A: Wi-Fi Wireless Streaming (Recommended)
-1. In the firmware code, keep `#define MODE_WIFI` uncommented:
-   ```cpp
-   #define MODE_WIFI
-   //#define MODE_SERIAL
-   ```
-2. Enter your Wi-Fi credentials (must be **2.4 GHz** Wi-Fi):
-   ```cpp
-   const char* WIFI_SSID     = "Your_WiFi_Name";
-   const char* WIFI_PASSWORD = "Your_WiFi_Password";
-   ```
-3. Set `SERVER_URL` to your computer's local IPv4 address (run `ipconfig` in Windows terminal):
-   ```cpp
-   const char* SERVER_URL    = "http://192.168.1.X:5000/api/sensor-data";
-   ```
-4. Connect ESP32 via USB and click **Upload**.
-5. Once uploaded, open **Serial Monitor (115200 baud)** to verify Wi-Fi connection and `HTTP 201` responses. You can now power the ESP32 from any USB adapter!
-
-#### Option B: USB Cable Direct Streaming (No Wi-Fi needed)
-1. In the firmware code:
-   ```cpp
-   //#define MODE_WIFI
-   #define MODE_SERIAL
-   ```
-2. Upload the sketch to ESP32.
-3. In your backend terminal, run the serial bridge:
+2. **Run the Serial Reader:**
+   Open a terminal in the project root:
    ```bash
    cd backend
    node serial_reader.js
    ```
+   * Or specify your exact COM port:
+   ```bash
+   node serial_reader.js COM6
+   ```
+
+3. **What You Will See in the Terminal:**
+   ```
+   =======================================================
+     SHM USB Serial Bridge ACTIVE: COM6 @ 115200
+     Forwarding live data to: https://shm-v5rg.onrender.com/api/sensor-data
+     Live Vercel Dashboard:   https://shm-kohl.vercel.app
+     Post-Event Report:       https://shm-kohl.vercel.app/post-analysis
+   =======================================================
+   ✅ ESP32 handshake received — sensor streaming active!
+
+   [📦 20 pkts] B1(X=0.04g Y=0.01g Z=1.01g | ⚪ IDLE)  B2(X=0.02g Y=0.00g Z=0.99g | ⚪ IDLE)
+   [📦 40 pkts] B1(X=0.88g Y=0.45g Z=1.65g | 🔴 VIB)   B2(X=0.22g Y=0.10g Z=1.02g | ⚪ IDLE)
+   ```
+
+> [!WARNING]
+> **COM Port Conflict ("Access Denied"):**
+> Windows allows only **one application** to access a serial port at a time. If `serial_reader.js` reports `Cannot open COM6: Access denied`, ensure that:
+> 1. The **Arduino IDE Serial Monitor window is closed**.
+> 2. No other background Node.js or PuTTY instance is holding the port.
 
 ---
 
-## 📊 Dashboard Pages & Views
+### Method 2: Arduino IDE Built-In Serial Monitor
 
-| Page | Route | Description |
-| :--- | :--- | :--- |
-| **Vibration View** | `/vibration` | Real-time multi-axis acceleration curves, dynamic shock magnitude, and SW-420 vibration pulse count. |
-| **Frequency View** | `/frequency` | Live Fast Fourier Transform (FFT) spectral response and resonant peak frequency tracking. |
-| **Orientation View** | `/orientation` | Real-time P-Delta drift, pitch, and roll angular displacement comparison. |
-| **History & Export** | All Pages | Download full session records as a structured `.csv` file. |
+If you want to view raw debug telemetry directly inside Arduino IDE:
+1. Open **Arduino IDE**.
+2. Select your ESP32 board and COM port under **Tools $\rightarrow$ Port**.
+3. Open **Serial Monitor** (**Ctrl + Shift + M**).
+4. Set the baud rate dropdown in the bottom right corner to **115200 baud**.
+5. You will see:
+   - I2C sensor checks (`ADXL345 #1 (0x53): OK`, `ADXL345 #2 (0x1D): OK`).
+   - Wi-Fi connection progress & assigned IP address (if in `MODE_WIFI`).
+   - JSON packet output stream.
 
 ---
 
-## 🛠️ Common Troubleshooting
+## 🚨 Emergency Calling, SMS & WhatsApp Alert System (Twilio & Deepgram)
 
-* **ESP32 prints `HTTP -1` or Connection Failed:**
-  * Your laptop's IP address probably changed. Run `ipconfig` in PowerShell and update `SERVER_URL` in the firmware.
-  * Ensure Windows Defender Firewall allows inbound traffic on port `5000`.
-* **ADXL345 "NOT FOUND" in Serial Monitor:**
-  * Check that `CS` pin is securely connected to `3.3V` (enables I2C mode).
-  * Verify `SDO` pin on Sensor 1 is connected to `GND` (`0x53`) and Sensor 2 to `3.3V` (`0x1D`).
-* **Vibration charts not moving:**
-  * Verify `npm start` is running in `backend` and Socket.io shows `Client connected`.
-  * Open browser console on `http://localhost:5173` to verify WebSocket status.
+Integrated with **Twilio Telecom REST APIs** and **Deepgram**, the system automates life-safety evacuation protocols during seismic emergencies:
 
+### 1. 📞 Occupant Voice Call with Auto-Hangup
+- **Target:** Residents registered as **"Inside Building"**.
+- **Action:** Twilio calls the resident's mobile phone. As soon as the call is answered, Amazon Polly speaks:
+  > *"EMERGENCY EARTHQUAKE WARNING! A severe seismic tremor has struck [Building Name]. You are registered inside [Flat / Room]. Evacuate immediately using emergency stairs. Do not use elevators! Proceed to the open ground assembly area now."*
+- **Auto-Cut:** Automatically drops the call using `<Hangup/>` once the message is complete.
+
+### 2. 💬 Resident Evacuation SMS & 🟢 WhatsApp
+- Sends a direct high-priority evacuation alert:
+  > *"🚨 CRITICAL EARTHQUAKE ALERT: Severe seismic tremor detected in Building 1, Flat 402. You are listed as INSIDE THE BUILDING. EVACUATE IMMEDIATELY via stairs! Do not use elevators."*
+
+### 3. 👨‍👩‍👦 Relative / Family Member Advisory SMS
+- For each resident inside the building, an alert is automatically dispatched to their registered emergency contact:
+  > *"⚠️ EARTHQUAKE ADVISORY: An earthquake has affected Building 1 (Flat 402), where your Father Sushil Sahoo resides. Emergency rescue & evacuation protocols are underway. You will receive updates as soon as they confirm safe evacuation."*
+
+---
+
+## 👥 Occupants Directory & Evacuation Dashboard (`/occupants`)
+
+Visit [https://shm-kohl.vercel.app/occupants](https://shm-kohl.vercel.app/occupants) to access:
+
+* **Live Safety Counters:**
+  - Total Residents registered.
+  - 🔴 **Inside Building (High Risk)**: Target list for emergency calls & SMS.
+  - 🟢 **Evacuated / Safe**: Residents confirmed safe at assembly grounds.
+* **Emergency Action Center:**
+  - **🚨 TRIGGER EVACUATION BROADCAST Button**: One-click broadcast with modal confirmation and live dispatch audit logs.
+  - **🛠️ Direct Telecom Tester**: Test Voice Call (Auto-Cut), SMS, and WhatsApp on any phone number.
+* **Directory Management (Manual & Excel):**
+  - **➕ Add Resident Manually**: Add name, phone, building, room, floor, status, and emergency relative contact.
+  - **✏️ Edit & 🗑️ Delete**: Full CRUD capabilities stored in Neon PostgreSQL.
+  - **One-Click Status Toggle**: Instantly switch an occupant between `Inside Building` and `Evacuated / Safe`.
+  - **📁 Import Excel / CSV**: Drag-and-drop `.xlsx` upload with fuzzy column header matching.
+  - **📥 Download Template**: Get a sample Excel template ready for editing.
+  - **📤 Export Directory**: Export the entire database into `.xlsx`.
+* **Live Audit Log:** Real-time log of every call SID, SMS SID, recipient, and status.
+
+---
+
+## 💻 Local Development Setup
+
+### Backend
+```bash
+cd backend
+npm install
+npm start
+# Runs locally at http://localhost:5000
+```
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+# Runs locally at http://localhost:5173
+```
+
+---
+
+## 📄 License & Civil Engineering Research
+Developed for Advanced Structural Health Monitoring (SHM), Base-Isolation Damping Comparative Studies, and Autonomous Seismic Life-Safety Systems.

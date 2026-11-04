@@ -18,3 +18,4 @@ router.post('/test-whatsapp', alertController.testWhatsApp);
 router.get('/logs', alertController.getAlertLogs);
 
 module.exports = router;
+

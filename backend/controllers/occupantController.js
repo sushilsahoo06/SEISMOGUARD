@@ -343,3 +343,4 @@ exports.exportOccupants = async (req, res) => {
     res.status(500).json({ error: 'Failed to export occupants directory' });
   }
 };
+

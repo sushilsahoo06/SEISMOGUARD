@@ -1,9 +1,13 @@
 import React from 'react';
 import BaseSensorChart from '../components/BaseSensorChart';
+import StructuralHealthCard from '../components/StructuralHealthCard';
 
-export default function VibrationPage({ labels, sw420_1, sw420_2, vibCount1, vibCount2 }) {
+export default function VibrationPage({ labels, sw420_1, sw420_2, vibCount1, vibCount2, ml }) {
   return (
     <div>
+      {/* ── Phase 4.2: Real-Time Structural Health & Resonance Card ─── */}
+      <StructuralHealthCard ml={ml} />
+
       <div className="page-header">
         <h2>Vibration — SW420 Digital Switch Sensor (Dual)</h2>
         <p>

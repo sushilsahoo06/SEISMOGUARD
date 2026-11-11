@@ -6,9 +6,14 @@ import VibrationPage from './pages/VibrationPage';
 import OrientationPage from './pages/OrientationPage';
 import PostAnalysisPage from './pages/PostAnalysisPage';
 import OccupantsPage from './pages/OccupantsPage';
+import AiSeismicBanner from './components/AiSeismicBanner';
+import MlEventsModal from './components/MlEventsModal';
 import './App.css';
 
-const SOCKET_SERVER_URL = import.meta.env.VITE_BACKEND_URL || 'https://shm-v5rg.onrender.com';
+const SOCKET_SERVER_URL =
+  typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000'
+    : (import.meta.env.VITE_BACKEND_URL || 'https://shm-v5rg.onrender.com');
 const WINDOW = 80;
 
 // Sliding window push helper
@@ -46,6 +51,10 @@ export default function App() {
   const [alarm1, setAlarm1] = useState(0);
   const [alarm2, setAlarm2] = useState(0);
 
+  // Machine Learning Real-Time State
+  const [mlState, setMlState] = useState(null);
+  const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
+
   const [fullSessionData, setFullSessionData] = useState([]);
 
   const hydrate = (rows) => {
@@ -67,11 +76,28 @@ export default function App() {
   };
 
   useEffect(() => {
+    // 1. Fetch initial sensor history
     fetch(`${SOCKET_SERVER_URL}/api/sensor-data/history`)
       .then((res) => res.json())
       .then((data) => { hydrate(data); setFullSessionData(data); })
       .catch((err) => console.error('Fetch error:', err));
 
+    // 2. Fetch ML status & keep polled as safety net
+    const fetchMl = () => {
+      fetch(`${SOCKET_SERVER_URL}/api/sensor-data/ml-status`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.prediction) {
+            setMlState(data.prediction);
+          }
+        })
+        .catch((err) => console.warn('ML status fetch notice:', err.message));
+    };
+
+    fetchMl();
+    const mlTimer = setInterval(fetchMl, 2500);
+
+    // 3. Setup WebSocket listener for real-time telemetry & ML alerts
     const socket = io(SOCKET_SERVER_URL);
     socket.on('newSensorData', (r) => {
       const t = new Date(r.timestamp).toLocaleTimeString();
@@ -92,9 +118,21 @@ export default function App() {
       setAlarm1(b1Alarm);
       setAlarm2(b2Alarm);
 
+      if (r.ml) {
+        setMlState(r.ml);
+      }
+
       setFullSessionData((prev) => [...prev, r]);
     });
-    return () => socket.disconnect();
+
+    socket.on('mlAlert', (alert) => {
+      setMlState((prev) => ({ ...prev, ...alert }));
+    });
+
+    return () => {
+      clearInterval(mlTimer);
+      socket.disconnect();
+    };
   }, []);
 
   const handleExportCSV = () => {
@@ -128,6 +166,13 @@ export default function App() {
             <NavLink to="/occupants" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'} style={{ background: '#fef2f2', color: '#b91c1c', fontWeight: 700, borderColor: '#fca5a5' }}>🚨 Evacuation & Alerts</NavLink>
           </nav>
         </header>
+
+        {/* ── Phase 4: Machine Learning Seismic Detection & EEW Banner ─ */}
+        <AiSeismicBanner
+          ml={mlState}
+          onOpenEventsModal={() => setIsEventsModalOpen(true)}
+          serverUrl={SOCKET_SERVER_URL}
+        />
 
         {/* ── Civil Engineering Structural Collapse Alert Banner ─────── */}
         <div className={`structural-alert-banner ${alarm1 === 2 ? 'alert-critical' : alarm1 === 1 ? 'alert-warning' : 'alert-normal'}`}>
@@ -163,12 +208,19 @@ export default function App() {
         {/* ── Routes ─────────────────────────────────────────────────── */}
         <Routes>
           <Route path="/" element={<Navigate to="/frequency" replace />} />
-          <Route path="/frequency" element={<FrequencyPage labels={labels} ax1={ax1} ay1={ay1} az1={az1} ax2={ax2} ay2={ay2} az2={az2} />} />
-          <Route path="/vibration" element={<VibrationPage labels={labels} vib1={vib1} vib2={vib2} sw420_1={sw420_1} sw420_2={sw420_2} vibCount1={vibCount1} vibCount2={vibCount2} />} />
+          <Route path="/frequency" element={<FrequencyPage labels={labels} ax1={ax1} ay1={ay1} az1={az1} ax2={ax2} ay2={ay2} az2={az2} ml={mlState} />} />
+          <Route path="/vibration" element={<VibrationPage labels={labels} vib1={vib1} vib2={vib2} sw420_1={sw420_1} sw420_2={sw420_2} vibCount1={vibCount1} vibCount2={vibCount2} ml={mlState} />} />
           <Route path="/orientation" element={<OrientationPage labels={labels} mag1={mag1} roll1={roll1} pitch1={pitch1} mag2={mag2} roll2={roll2} pitch2={pitch2} />} />
           <Route path="/post-analysis" element={<PostAnalysisPage />} />
           <Route path="/occupants" element={<OccupantsPage />} />
         </Routes>
+
+        {/* ── Modal: AI-Detected Seismic Event History ───────────────── */}
+        <MlEventsModal
+          isOpen={isEventsModalOpen}
+          onClose={() => setIsEventsModalOpen(false)}
+          serverUrl={SOCKET_SERVER_URL}
+        />
 
         {/* ── Live System Status Bar ─────────────────────────────────── */}
         <footer className="temp-status-bar">

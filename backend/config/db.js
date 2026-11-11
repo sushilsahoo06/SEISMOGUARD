@@ -11,13 +11,16 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
+let hasLoggedDbConnect = false;
 pool.on('connect', () => {
-  console.log('Connected to Neon PostgreSQL database pool');
+  if (!hasLoggedDbConnect) {
+    console.log('Connected to Neon PostgreSQL database pool');
+    hasLoggedDbConnect = true;
+  }
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected database client error:', err);
-  process.exit(-1);
+  console.warn('Database pool client notice (auto-reconnecting):', err.message);
 });
 
 module.exports = {

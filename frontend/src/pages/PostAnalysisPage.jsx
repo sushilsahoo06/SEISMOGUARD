@@ -61,7 +61,10 @@ function cleanReportText(text) {
 }
 
 export default function PostAnalysisPage() {
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'https://shm-v5rg.onrender.com';
+  const API_BASE_URL =
+    typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:5000'
+      : (import.meta.env.VITE_BACKEND_URL || 'https://shm-v5rg.onrender.com');
 
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
@@ -177,7 +180,7 @@ export default function PostAnalysisPage() {
       }
     }
 
-    const { b1, b2, dampingEfficiency, totalSamples, eventWindow } = data;
+    const { b1, b2, dampingEfficiency, totalSamples, eventWindow, mlAssessment } = data;
     const dateStr = new Date().toLocaleString();
     const durationStr = eventWindow && eventWindow.hasEvent ? `${eventWindow.eventDurationSec}s` : 'Continuous';
 
@@ -296,8 +299,25 @@ export default function PostAnalysisPage() {
     doc.setFont('helvetica', 'normal');
     doc.text(`B2 Tilt: ${b2.residualTilt}° (Recovered)`, c4X + 3, y + 18);
 
-    // Figure 1: Final Seismic Acceleration Waveform
-    y += 28;
+    y += 25;
+
+    // AI Machine Learning Seismic Health Banner
+    if (mlAssessment) {
+      doc.setFillColor(mlAssessment.eventType === 'SEISMIC_TREMOR' ? 254 : 240, mlAssessment.eventType === 'SEISMIC_TREMOR' ? 242 : 253, mlAssessment.eventType === 'SEISMIC_TREMOR' ? 242 : 244);
+      doc.setDrawColor(mlAssessment.eventType === 'SEISMIC_TREMOR' ? 239 : 16, mlAssessment.eventType === 'SEISMIC_TREMOR' ? 68 : 185, mlAssessment.eventType === 'SEISMIC_TREMOR' ? 68 : 129);
+      doc.roundedRect(margin, y, contentWidth, 7, 1.5, 1.5, 'FD');
+      doc.setFontSize(6.8);
+      doc.setTextColor(mlAssessment.eventType === 'SEISMIC_TREMOR' ? 185 : 4, mlAssessment.eventType === 'SEISMIC_TREMOR' ? 28 : 120, mlAssessment.eventType === 'SEISMIC_TREMOR' ? 28 : 87);
+      doc.setFont('helvetica', 'bold');
+      doc.text(
+        `AI SEISMIC DIAGNOSIS: ${mlAssessment.eventType} [Hazard: ${mlAssessment.hazardLevel || 'SAFE'}] · Confidence: ${Math.round((mlAssessment.confidence || 1.0) * 100)}% · Damage Index: ${((mlAssessment.damageIndex || 0) * 100).toFixed(1)}% · Resonant Shift: B1 ${mlAssessment.dominantFreq1 || 0} Hz -> B2 ${mlAssessment.dominantFreq2 || 0} Hz`,
+        margin + 3,
+        y + 4.8
+      );
+      y += 9;
+    } else {
+      y += 3;
+    }
     doc.setTextColor(15, 23, 42);
     doc.setFontSize(10.5);
     doc.setFont('helvetica', 'bold');
@@ -579,7 +599,7 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
     );
   }
 
-  const { dampingEfficiency, b1, b2, timeline, fullTimeline, totalSamples, eventWindow } = data;
+  const { dampingEfficiency, b1, b2, timeline, fullTimeline, totalSamples, eventWindow, mlAssessment } = data;
 
   // Select timeline based on zoom toggle: 'event' (zoomed to earthquake) or 'full' (all data)
   const activeTimeline = (timelineMode === 'full' && fullTimeline && fullTimeline.length > 0)
@@ -758,6 +778,87 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
           </div>
           <div style={{ whiteSpace: 'pre-wrap', color: '#1e1b4b', fontSize: '0.92rem', lineHeight: '1.7', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             {cleanReportText(aiReport)}
+          </div>
+        </div>
+      )}
+
+      {/* ── Phase 4.3: AI Structural Health Diagnosis & ML Classification ─ */}
+      {mlAssessment && (
+        <div style={{
+          background: mlAssessment.eventType === 'SEISMIC_TREMOR' ? '#fef2f2' : mlAssessment.eventType === 'DISTURBANCE' ? '#fffbeb' : '#f0fdf4',
+          border: `1px solid ${mlAssessment.eventType === 'SEISMIC_TREMOR' ? '#fecaca' : mlAssessment.eventType === 'DISTURBANCE' ? '#fde68a' : '#bbf7d0'}`,
+          borderRadius: '12px',
+          padding: '18px 22px',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '1.4rem' }}>
+                {mlAssessment.eventType === 'SEISMIC_TREMOR' ? '🚨' : mlAssessment.eventType === 'DISTURBANCE' ? '🛡️' : '🟢'}
+              </span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>
+                  AI Structural Health Diagnosis: {mlAssessment.eventType === 'SEISMIC_TREMOR' ? 'Confirmed Seismic Tremor' : mlAssessment.eventType === 'DISTURBANCE' ? 'Transient Disturbance Rejected' : 'Nominal Ambient Excitation'}
+                </h3>
+                <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                  Radix-2 FFT Spectrum + Random Forest Decision Model · False-Alarm Rejection Active
+                </span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <span style={{
+                background: mlAssessment.hazardLevel === 'STRUCTURAL_HAZARD' ? '#ef4444' : mlAssessment.hazardLevel === 'WARNING' ? '#f59e0b' : '#10b981',
+                color: '#fff',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontWeight: 700,
+                fontSize: '0.8rem',
+              }}>
+                Hazard: {mlAssessment.hazardLevel || 'SAFE'}
+              </span>
+              <span style={{
+                background: '#fff',
+                border: '1px solid #cbd5e1',
+                color: '#334155',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+              }}>
+                ML Confidence: {Math.round((mlAssessment.confidence || 1.0) * 100)}%
+              </span>
+            </div>
+          </div>
+
+          <p style={{ margin: '0 0 14px 0', fontSize: '0.9rem', color: '#334155', lineHeight: '1.5' }}>
+            <b>Diagnostic Assessment:</b> {mlAssessment.statusMessage}
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', background: '#ffffffcc', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)' }}>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>BUILDING 1 DAMAGE INDEX</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: (mlAssessment.damageIndex || 0) > 0.4 ? '#ef4444' : '#10b981' }}>
+                {((mlAssessment.damageIndex || 0) * 100).toFixed(1)}%
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>B1 RESONANT FREQUENCY</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#2563eb' }}>
+                {mlAssessment.dominantFreq1 ? `${mlAssessment.dominantFreq1.toFixed(2)} Hz` : '—'}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>B2 DAMPED FREQUENCY</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#10b981' }}>
+                {mlAssessment.dominantFreq2 ? `${mlAssessment.dominantFreq2.toFixed(2)} Hz` : '—'}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>PERIOD SHIFT / DELTA</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#6366f1' }}>
+                {mlAssessment.frequencyDelta ? `Δ ${mlAssessment.frequencyDelta.toFixed(2)} Hz` : 'Synchronous'}
+              </div>
+            </div>
           </div>
         </div>
       )}

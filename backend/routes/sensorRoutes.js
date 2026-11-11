@@ -17,6 +17,15 @@ router.post('/ai-report', sensorController.generateAIReport);
 // Clear session data to start a new earthquake experiment
 router.delete('/session', sensorController.clearSessionData);
 
+// Real-Time Machine Learning Status & Dominant Resonance Spectrum
+router.get('/ml-status', sensorController.getMLStatus);
+
+// Logged Seismic Events detected by ML
+router.get('/ml-events', sensorController.getMLEvents);
+
+// Interactive Simulation Test (Simulate Earthquake or Knock)
+router.post('/simulate', sensorController.simulateShake);
+
 // Download raw session records as CSV
 router.get('/export', sensorController.exportAllData);
 

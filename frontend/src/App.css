@@ -623,3 +623,433 @@ body,
 .print-header {
   display: none;
 }
+
+/* ==========================================================================
+   Phase 4: Machine Learning Seismic Banner & Health Card Styles
+   ========================================================================== */
+
+/* AI Seismic Banner */
+.ai-seismic-banner {
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.ai-banner-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+}
+
+.ai-banner-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.ai-banner-text {
+  flex: 1;
+}
+
+.ai-banner-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.ai-banner-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ai-banner-desc {
+  margin: 0 0 10px 0;
+  font-size: 0.86rem;
+  opacity: 0.9;
+}
+
+.ai-banner-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-metric-tag {
+  font-size: 0.78rem;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: #1e293b;
+}
+
+.ai-metric-tag.highlight-b2 {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+  font-weight: 600;
+}
+
+.ai-eew-badge {
+  background: #fef08a;
+  color: #854d0e;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #facc15;
+}
+
+.btn-ai-events {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.btn-ai-events:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* Banner Color Variants */
+.ml-banner-ambient {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.ml-banner-disturbance {
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  color: #854d0e;
+}
+
+.ml-banner-minor {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+.ml-banner-warning {
+  background: #fff7ed;
+  border: 2px solid #fdba74;
+  color: #9a3412;
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.2);
+}
+
+.ml-banner-critical {
+  background: #fef2f2;
+  border: 2px solid #ef4444;
+  color: #991b1b;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);
+  animation: pulse-border 0.8s infinite alternate;
+}
+
+/* Structural Health Card */
+.structural-health-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.shm-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+}
+
+.shm-card-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.15rem;
+  color: #0f172a;
+}
+
+.shm-card-header p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+.shm-header-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.shm-pill {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.b1-pill {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.b2-pill {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.shm-comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.shm-building-col {
+  padding: 16px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.b1-col {
+  border-left: 4px solid #2563eb;
+}
+
+.b2-col {
+  border-left: 4px solid #10b981;
+}
+
+.building-badge-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.building-badge-title h4 {
+  margin: 0;
+  font-size: 0.98rem;
+  color: #1e293b;
+}
+
+.dot {
+  font-size: 1rem;
+}
+.b1-dot { color: #2563eb; }
+.b2-dot { color: #10b981; }
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px dashed #e2e8f0;
+  font-size: 0.85rem;
+}
+
+.stat-lbl {
+  color: #64748b;
+}
+
+.stat-val {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.stat-val.stat-freq {
+  color: #7c3aed;
+}
+
+.stat-val.highlight-red {
+  color: #ef4444;
+}
+
+.stat-val.highlight-green {
+  color: #10b981;
+}
+
+.shm-gauges-col {
+  padding: 16px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.shm-gauges-col h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.98rem;
+  color: #1e293b;
+}
+
+.gauge-item {
+  margin-bottom: 12px;
+}
+
+.gauge-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  margin-bottom: 4px;
+}
+
+.progress-track {
+  width: 100%;
+  height: 9px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.fill-green {
+  background-color: #10b981;
+}
+
+.fill-blue {
+  background-color: #2563eb;
+}
+
+.shm-frequency-shift {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+/* ML Events Modal */
+.ml-events-modal-content {
+  max-width: 950px;
+  width: 95%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.events-table-wrapper {
+  overflow-y: auto;
+  margin: 16px 0;
+  max-height: 55vh;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.ml-events-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.ml-events-table th {
+  background: #f8fafc;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+}
+
+.ml-events-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cell-time {
+  display: flex;
+  flex-direction: column;
+}
+
+.time-primary {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.time-secondary {
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.hazard-badge {
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.badge-minor {
+  background: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fef08a;
+}
+
+.badge-warning {
+  background: #ffedd5;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+}
+
+.badge-critical {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.empty-events-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.empty-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.empty-events-state h3 {
+  margin: 0 0 6px 0;
+  color: #1e293b;
+}
+
+.empty-events-state p {
+  max-width: 500px;
+  margin: 0 auto;
+  font-size: 0.85rem;
+}

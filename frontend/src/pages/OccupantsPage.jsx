@@ -2,7 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import './OccupantsPage.css';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://shm-v5rg.onrender.com';
+const BACKEND_URL =
+  typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000'
+    : (import.meta.env.VITE_BACKEND_URL || 'https://shm-v5rg.onrender.com');
 
 export default function OccupantsPage() {
   const [occupants, setOccupants] = useState([]);

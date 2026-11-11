@@ -202,15 +202,24 @@ exports.toggleAutoDispatch = (req, res) => {
 exports.checkAndTriggerAutonomousAlert = async (record, io) => {
   if (!autoDispatchConfig.enabled) return;
 
-  const hasVibration = (
-    record.sw420_1 === 1 ||
-    record.sw420_2 === 1 ||
-    (record.alarm_1 && record.alarm_1 >= 1) ||
-    (record.alarm_2 && record.alarm_2 >= 1) ||
-    (record.magnitude_1 && record.magnitude_1 > 1.35) ||
-    (record.magnitude_2 && record.magnitude_2 > 1.35)
+  // 🛡️ ML FALSE-ALARM FILTER (Phase 1 & Phase 3):
+  // If ML classifier tags this as benign mechanical disturbance (knock, table tap, door slam),
+  // suppress emergency dispatch to prevent annoying false telephone calls/SMS!
+  if (record.ml) {
+    if (record.ml.eventType === 'DISTURBANCE') {
+      // Suppress false alarm!
+      return;
+    }
+  }
+
+  // Check for confirmed seismic tremor via ML, or raw physical fallback
+  const isMlSeismicConfirmed = record.ml && record.ml.eventType === 'SEISMIC_TREMOR' && record.ml.confidence >= 0.65;
+  const isRawEmergencyFallback = (
+    (record.magnitude_1 && record.magnitude_1 > 1.6) ||
+    (record.magnitude_2 && record.magnitude_2 > 1.6)
   );
 
+  const hasVibration = isMlSeismicConfirmed || isRawEmergencyFallback;
   if (!hasVibration) return;
 
   const now = Date.now();
@@ -219,17 +228,22 @@ exports.checkAndTriggerAutonomousAlert = async (record, io) => {
   }
 
   autoDispatchConfig.lastTriggeredAt = now;
-  console.log('[AUTONOMOUS VIBRATION TRIGGER] Seismic shaking detected! Dispatching emergency calls & SMS automatically...');
+  const triggerSource = isMlSeismicConfirmed
+    ? `AI Seismic Classifier (${record.ml.hazardLevel} - ${(record.ml.confidence * 100).toFixed(0)}% Conf)`
+    : 'Autonomous Vibration Trigger (ADXL345 / SW-420)';
+
+  console.log(`[AUTONOMOUS ALERT] ${triggerSource} triggered! Dispatching emergency calls & SMS automatically...`);
 
   try {
     const result = await executeEmergencyBroadcast({
       building_id: autoDispatchConfig.targetBuilding,
-      source: 'Autonomous Vibration Trigger (SW-420 / ADXL345)',
+      source: triggerSource,
     });
 
     if (io) {
       io.emit('autonomousAlertDispatched', {
-        message: 'Seismic vibration detected! Emergency calls & SMS automatically dispatched to occupants and relatives.',
+        message: `Seismic earthquake shaking confirmed by ML (${record.ml?.hazardLevel || 'CRITICAL'})! Emergency calls & SMS automatically dispatched.`,
+        ml: record.ml,
         result,
         timestamp: new Date(),
       });

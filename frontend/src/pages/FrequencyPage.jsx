@@ -1,14 +1,22 @@
 import React from 'react';
 import BaseSensorChart from '../components/BaseSensorChart';
+import StructuralHealthCard from '../components/StructuralHealthCard';
+import FftSpectrumChart from '../components/FftSpectrumChart';
 
 // Color palette
 const C1 = { line: '#2563eb', bg: 'rgba(37,99,235,0.08)' };  // Building 1 — Blue
 const C2 = { line: '#10b981', bg: 'rgba(16,185,129,0.08)' }; // Building 2 — Green
 
-export default function FrequencyPage({ labels, ax1, ay1, az1, ax2, ay2, az2 }) {
+export default function FrequencyPage({ labels, ax1, ay1, az1, ax2, ay2, az2, ml }) {
   return (
     <div>
-      <div className="page-header">
+      {/* ── Phase 4.2: Real-Time Structural Health & Resonance Card ─── */}
+      <StructuralHealthCard ml={ml} />
+
+      {/* ── Live Fast Fourier Transform (FFT) Power Spectrum Chart ─── */}
+      <FftSpectrumChart ml={ml} />
+
+      <div className="page-header" style={{ marginTop: '24px' }}>
         <h2>Accelerometer — X / Y / Z Axes (ADXL345)</h2>
         <p>
           <span style={{ color: C1.line, fontWeight: 700 }}>● Building 1 (Unprotected)</span>

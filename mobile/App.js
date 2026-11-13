@@ -15,7 +15,7 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialCommunityIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -64,13 +64,12 @@ export default function App() {
     async function initApp() {
       try {
         // Setup Expo Audio configuration for high-priority emergency playback
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
-          shouldDuckAndroid: false,
-          playThroughEarpieceAndroid: false,
-        });
+        if (setAudioModeAsync) {
+          await setAudioModeAsync({
+            playsInSilentMode: true,
+            shouldPlayInBackground: true,
+          }).catch(() => {});
+        }
 
         // Load saved custom audio
         const savedUri = await AsyncStorage.getItem(STORAGE_KEYS.AUDIO_URI);
@@ -93,7 +92,7 @@ export default function App() {
           setAlertHistory(JSON.parse(savedHistory));
         }
       } catch (err) {
-        console.warn('Initialization error:', err);
+        console.warn('Initialization notice:', err);
       }
     }
     initApp();
@@ -212,7 +211,7 @@ export default function App() {
   }, [isCriticalAlarm]);
 
   // ── 4. Trigger Critical Earthquake Alarm ─────────────────────────
-  const triggerCriticalEarthquakeAlarm = async (alertInfo) => {
+  const triggerCriticalEarthquakeAlarm = (alertInfo) => {
     setIsCriticalAlarm(true);
     setAlarmDetails(alertInfo);
 
@@ -227,37 +226,40 @@ export default function App() {
     startHapticAlarm();
 
     // Play User's Custom Audio or Default Emergency Siren
-    await playAlarmAudio();
+    playAlarmAudio();
   };
 
   // ── 5. Play / Stop Alert Audio ───────────────────────────────────
-  const playAlarmAudio = async () => {
+  const playAlarmAudio = () => {
     try {
       if (soundRef.current) {
-        await soundRef.current.unloadAsync().catch(() => {});
+        try {
+          soundRef.current.pause();
+          soundRef.current.release();
+        } catch (e) {}
+        soundRef.current = null;
       }
 
       const audioUri = customAudioUri || DEFAULT_ALARM_AUDIO;
-      console.log('Playing Emergency Audio:', audioUri);
+      console.log('Playing Emergency Audio via expo-audio:', audioUri);
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: audioUri },
-        { shouldPlay: true, isLooping: true, volume: 1.0 }
-      );
-      soundRef.current = sound;
-      await sound.playAsync();
+      const player = createAudioPlayer({ uri: audioUri });
+      player.loop = true;
+      player.volume = 1.0;
+      player.play();
+      soundRef.current = player;
     } catch (err) {
-      console.error('Failed to play alarm audio:', err);
-      // Fallback: system vibration pattern
+      console.error('Audio playback fallback to vibration:', err);
       Vibration.vibrate([500, 250, 500, 250], true);
     }
   };
 
-  const stopAlarmAudio = async () => {
+  const stopAlarmAudio = () => {
     try {
       if (soundRef.current) {
-        await soundRef.current.stopAsync().catch(() => {});
-        await soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current.pause();
+        soundRef.current.seekTo(0);
+        soundRef.current.release();
         soundRef.current = null;
       }
     } catch (e) {}
@@ -316,7 +318,7 @@ export default function App() {
   };
 
   // ── 7. Preview Audio Toggle ──────────────────────────────────────
-  const toggleAudioPreview = async () => {
+  const toggleAudioPreview = () => {
     if (isPreviewing) {
       stopPreviewAudio();
       return;
@@ -326,31 +328,33 @@ export default function App() {
       stopPreviewAudio();
       const targetUri = customAudioUri || DEFAULT_ALARM_AUDIO;
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: targetUri },
-        { shouldPlay: true, isLooping: false, volume: 1.0 }
-      );
-      previewSoundRef.current = sound;
+      const player = createAudioPlayer({ uri: targetUri });
+      player.loop = false;
+      player.volume = 1.0;
+      player.play();
+      previewSoundRef.current = player;
       setIsPreviewing(true);
 
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.didJustFinish) {
-          setIsPreviewing(false);
-        }
-      });
-
-      await sound.playAsync();
+      // Reset when completed
+      if (player.addListener) {
+        player.addListener('playbackStatusUpdate', (status) => {
+          if (status && status.didJustFinish) {
+            setIsPreviewing(false);
+          }
+        });
+      }
     } catch (err) {
       setIsPreviewing(false);
-      Alert.alert('Playback Error', 'Could not preview this audio file. Please verify format.');
+      Alert.alert('Playback Notice', 'Could not preview audio file. Make sure file is a valid MP3/WAV.');
     }
   };
 
-  const stopPreviewAudio = async () => {
+  const stopPreviewAudio = () => {
     try {
       if (previewSoundRef.current) {
-        await previewSoundRef.current.stopAsync().catch(() => {});
-        await previewSoundRef.current.unloadAsync().catch(() => {});
+        previewSoundRef.current.pause();
+        previewSoundRef.current.seekTo(0);
+        previewSoundRef.current.release();
         previewSoundRef.current = null;
       }
     } catch (e) {}

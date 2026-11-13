@@ -55,3 +55,4 @@ npm start
 2. Tap **"Pick Custom Sound"** and select any music or sound file from your device.
 3. Tap **"Preview"** to verify the volume.
 4. Tap **"Test Critical Alarm (Simulate)"** to experience the full emergency alert screen and sound!
+

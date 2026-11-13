@@ -135,3 +135,4 @@ const styles = StyleSheet.create({
   redText: { color: '#ef4444' },
   greenText: { color: '#10b981' },
 });
+

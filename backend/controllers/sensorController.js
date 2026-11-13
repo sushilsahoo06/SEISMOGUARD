@@ -8,6 +8,18 @@ exports.setSocketIO = (io) => {
   socketIO = io;
 };
 
+// In-Memory Resilient Session Store (Preserves up to 3,000 readings so real-time WebSocket telemetry,
+// historical charts, and post-event analysis continue working with zero downtime even when cloud DB quota is exceeded)
+const memoryHistory = [];
+const MAX_MEMORY_HISTORY = 3000;
+function pushMemoryHistory(record) {
+  memoryHistory.push(record);
+  if (memoryHistory.length > MAX_MEMORY_HISTORY) {
+    memoryHistory.shift();
+  }
+}
+let hasWarnedDbQuota = false;
+
 // Helper: compute derived orientation values from accel axes
 function deriveOrientation(ax, ay, az) {
   const magnitude = parseFloat(Math.sqrt(ax * ax + ay * ay + az * az).toFixed(4));
@@ -119,9 +131,40 @@ exports.receiveData = async (req, res, next) => {
       mlPrediction.attenuation?.shockReductionPct || 0.0,
     ];
 
-    const result = await db.query(queryText, values);
+    let savedRow = null;
+    try {
+      const result = await db.query(queryText, values);
+      savedRow = result.rows[0];
+    } catch (dbErr) {
+      if (!hasWarnedDbQuota) {
+        console.warn('⚠️ [Database Notice] Database quota reached or unavailable (' + dbErr.message + '). Seamlessly streaming via resilient in-memory mode!');
+        hasWarnedDbQuota = true;
+      }
+      savedRow = {
+        id: Date.now(),
+        timestamp: currentReading.timestamp,
+        accel_1, accel_2, vib_1, vib_2,
+        accel_x_1, accel_y_1, accel_z_1, gyro_x_1, gyro_y_1, gyro_z_1, temp_1,
+        magnitude_1: d1.magnitude, roll_1: d1.roll, pitch_1: d1.pitch,
+        accel_x_2, accel_y_2, accel_z_2, gyro_x_2, gyro_y_2, gyro_z_2, temp_2,
+        magnitude_2: d2.magnitude, roll_2: d2.roll, pitch_2: d2.pitch,
+        sw420_1: sw420_1 ? 1 : 0, sw420_2: sw420_2 ? 1 : 0,
+        vib_count_1: Math.max(0, parseInt(vib_count_1) || 0),
+        vib_count_2: Math.max(0, parseInt(vib_count_2) || 0),
+        ml_event_type: mlPrediction.eventType || 'NORMAL',
+        ml_confidence: mlPrediction.confidence || 0.0,
+        ml_hazard_level: mlPrediction.hazardLevel || 'SAFE',
+        ml_damage_index: mlPrediction.damageIndex || 0.0,
+        ml_pga_1: mlPrediction.building1?.pga || d1.magnitude,
+        ml_dominant_freq_1: mlPrediction.building1?.dominantFreq || 0.0,
+        ml_attenuation: mlPrediction.attenuation?.shockReductionPct || 0.0,
+      };
+    }
+
+    pushMemoryHistory(savedRow);
+
     req.newSensorRecord = {
-      ...result.rows[0],
+      ...savedRow,
       alarm_1: alarm_1,
       alarm_2: alarm_2,
       ml: mlPrediction,
@@ -138,8 +181,8 @@ exports.receiveData = async (req, res, next) => {
     });
     next();
   } catch (err) {
-    console.error('Error recording sensor data:', err);
-    res.status(500).json({ error: 'Database write error' });
+    console.error('Error processing sensor data:', err);
+    res.status(500).json({ error: 'Processing error' });
   }
 };
 
@@ -153,15 +196,21 @@ exports.getHistory = async (req, res) => {
     `);
     res.json(result.rows.reverse());
   } catch (err) {
-    console.error('Error querying sensor history:', err);
-    res.status(500).json({ error: 'Failed to retrieve records' });
+    // If DB is offline / quota exceeded, return from in-memory fallback
+    res.json(memoryHistory.slice(-100));
   }
 };
 
 // Export full session as CSV
 exports.exportAllData = async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM sensor_readings ORDER BY timestamp ASC');
+    let rows = [];
+    try {
+      const result = await db.query('SELECT * FROM sensor_readings ORDER BY timestamp ASC');
+      rows = result.rows;
+    } catch (dbErr) {
+      rows = memoryHistory;
+    }
 
     const header = [
       'Timestamp',
@@ -170,7 +219,7 @@ exports.exportAllData = async (req, res) => {
       'SW420_1','SW420_2','VibCount1','VibCount2',
     ].join(',') + '\n';
 
-    const rows = result.rows.map((r) => {
+    const csvRows = rows.map((r) => {
       const t = r.timestamp ? new Date(r.timestamp).toISOString() : '';
       return [
         t,
@@ -182,7 +231,7 @@ exports.exportAllData = async (req, res) => {
 
     res.header('Content-Type', 'text/csv');
     res.attachment(`shm_export_${Date.now()}.csv`);
-    return res.send(header + rows);
+    return res.send(header + csvRows);
   } catch (err) {
     console.error('CSV export error:', err);
     res.status(500).json({ error: 'CSV export error' });
@@ -192,12 +241,17 @@ exports.exportAllData = async (req, res) => {
 // Post-Event Final Earthquake Analysis & Comparative Report
 exports.getPostEventAnalysis = async (req, res) => {
   try {
-    const result = await db.query(`
-      SELECT * FROM sensor_readings
-      ORDER BY timestamp ASC
-    `);
+    let rows = [];
+    try {
+      const result = await db.query(`
+        SELECT * FROM sensor_readings
+        ORDER BY timestamp ASC
+      `);
+      rows = result.rows;
+    } catch (dbErr) {
+      rows = memoryHistory;
+    }
 
-    const rows = result.rows;
     if (!rows || rows.length === 0) {
       return res.json({
         hasData: false,
@@ -430,7 +484,12 @@ exports.getPostEventAnalysis = async (req, res) => {
 // Reset / Clear Session Data to start a fresh earthquake test
 exports.clearSessionData = async (req, res) => {
   try {
-    await db.query('DELETE FROM sensor_readings');
+    memoryHistory.length = 0;
+    try {
+      await db.query('DELETE FROM sensor_readings');
+    } catch (dbErr) {
+      // Ignored if DB is quota locked
+    }
     res.json({ status: 'success', message: 'Earthquake session cleared. Ready for next test!' });
   } catch (err) {
     console.error('Clear session error:', err);

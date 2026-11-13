@@ -186,14 +186,20 @@ class MLInferenceEngine {
         eventData.durationSec,
         eventData.statusMessage,
       ];
-      const res = await db.query(q, vals);
-      if (res.rows && res.rows[0]) {
-        this.recentEventsCache.unshift(res.rows[0]);
+      try {
+        const res = await db.query(q, vals);
+        if (res.rows && res.rows[0]) {
+          this.recentEventsCache.unshift(res.rows[0]);
+          if (this.recentEventsCache.length > 50) this.recentEventsCache.pop();
+          console.log(`[ML Engine] 🔔 Logged seismic event: ${eventData.hazardLevel} (${eventData.durationSec}s duration)`);
+        }
+      } catch (err) {
+        this.recentEventsCache.unshift({ id: Date.now(), ...eventData });
         if (this.recentEventsCache.length > 50) this.recentEventsCache.pop();
-        console.log(`[ML Engine] 🔔 Logged seismic event: ${eventData.hazardLevel} (${eventData.durationSec}s duration)`);
+        console.warn(`[ML Engine] 🔔 Logged seismic event to cache: ${eventData.hazardLevel} (${eventData.durationSec}s duration)`);
       }
     } catch (err) {
-      console.error('[ML Engine] Error logging event to ml_events:', err.message);
+      console.error('[ML Engine] Error logging event:', err.message);
     }
   }
 

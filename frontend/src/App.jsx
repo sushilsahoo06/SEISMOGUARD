@@ -6,6 +6,7 @@ import VibrationPage from './pages/VibrationPage';
 import OrientationPage from './pages/OrientationPage';
 import PostAnalysisPage from './pages/PostAnalysisPage';
 import OccupantsPage from './pages/OccupantsPage';
+import SimpleAlertPage from './pages/SimpleAlertPage';
 import AiSeismicBanner from './components/AiSeismicBanner';
 import MlEventsModal from './components/MlEventsModal';
 import './App.css';
@@ -164,6 +165,7 @@ export default function App() {
             <NavLink to="/orientation" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Orientation</NavLink>
             <NavLink to="/post-analysis" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'} style={{ background: '#eff6ff', color: '#2563eb', fontWeight: 600 }}>📊 Post-Event Report</NavLink>
             <NavLink to="/occupants" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'} style={{ background: '#fef2f2', color: '#b91c1c', fontWeight: 700, borderColor: '#fca5a5' }}>🚨 Evacuation & Alerts</NavLink>
+            <NavLink to="/sound-alert" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'} style={{ background: '#fef3c7', color: '#b45309', fontWeight: 700, borderColor: '#fcd34d' }}>🔔 Earthquake Sound Alert</NavLink>
           </nav>
         </header>
 
@@ -213,6 +215,7 @@ export default function App() {
           <Route path="/orientation" element={<OrientationPage labels={labels} mag1={mag1} roll1={roll1} pitch1={pitch1} mag2={mag2} roll2={roll2} pitch2={pitch2} />} />
           <Route path="/post-analysis" element={<PostAnalysisPage />} />
           <Route path="/occupants" element={<OccupantsPage />} />
+          <Route path="/sound-alert" element={<SimpleAlertPage />} />
         </Routes>
 
         {/* ── Modal: AI-Detected Seismic Event History ───────────────── */}

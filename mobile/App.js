@@ -14,11 +14,33 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
-import * as DocumentPicker from 'expo-document-picker';
-import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
+
+// Safe native module loading with fallback
+let createAudioPlayer = null;
+let setAudioModeAsync = null;
+try {
+  const audioMod = require('expo-audio');
+  createAudioPlayer = audioMod.createAudioPlayer;
+  setAudioModeAsync = audioMod.setAudioModeAsync;
+} catch (err) {
+  console.warn('expo-audio not available on this Expo Go build, falling back to vibration');
+}
+
+let Haptics = null;
+try {
+  Haptics = require('expo-haptics');
+} catch (err) {
+  console.warn('expo-haptics not available');
+}
+
+let DocumentPicker = null;
+try {
+  DocumentPicker = require('expo-document-picker');
+} catch (err) {
+  console.warn('expo-document-picker not available');
+}
 
 // Distinct Modular Components
 import HeaderComponent from './components/HeaderComponent';
@@ -222,9 +244,16 @@ export default function App() {
   const playAlarmAudio = () => {
     try {
       if (playerRef.current) {
-        playerRef.current.pause();
-        playerRef.current.release();
+        try {
+          playerRef.current.pause();
+          playerRef.current.release();
+        } catch (e) {}
         playerRef.current = null;
+      }
+
+      if (!createAudioPlayer) {
+        Vibration.vibrate([500, 250, 500, 250], true);
+        return;
       }
 
       const source = getResolvedAudioSource();
@@ -265,8 +294,12 @@ export default function App() {
     if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
     hapticIntervalRef.current = setInterval(() => {
       try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        if (Haptics && Haptics.notificationAsync) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        } else {
+          Vibration.vibrate(400);
+        }
       } catch (e) {
         Vibration.vibrate(400);
       }
@@ -282,6 +315,11 @@ export default function App() {
 
     try {
       stopPreviewAudio();
+      if (!createAudioPlayer) {
+        Alert.alert('Notice', 'expo-audio not available on this Expo Go build. Testing vibration instead.');
+        Vibration.vibrate(500);
+        return;
+      }
       const source = getResolvedAudioSource();
       const player = createAudioPlayer(source);
       player.loop = false;
@@ -319,6 +357,10 @@ export default function App() {
   // ── 7. Pick Custom Audio File from Phone ──────────────────────────
   const handlePickAudioFile = async () => {
     try {
+      if (!DocumentPicker || !DocumentPicker.getDocumentAsync) {
+        Alert.alert('File Picker', 'Place your file in mobile/public/ or mobile/assets/ and type the name above.');
+        return;
+      }
       const res = await DocumentPicker.getDocumentAsync({
         type: ['audio/*'],
         copyToCacheDirectory: true,

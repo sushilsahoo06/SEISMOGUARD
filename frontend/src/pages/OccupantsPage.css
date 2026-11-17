@@ -34,24 +34,76 @@
   max-width: 750px;
 }
 
-.btn-broadcast-main {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  color: #ffffff;
-  border: none;
-  font-size: 0.95rem;
-  font-weight: 700;
-  padding: 12px 24px;
+.btn-alert-master-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
   border-radius: 8px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+  border: 1px solid #e2e8f0;
   transition: all 0.2s ease;
-  letter-spacing: 0.5px;
+  text-align: left;
 }
 
-.btn-broadcast-main:hover {
-  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.45);
+.toggle-armed {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.1);
+}
+
+.toggle-armed:hover {
+  background: #fee2e2;
+}
+
+.toggle-testing {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.toggle-testing:hover {
+  background: #f1f5f9;
+}
+
+.toggle-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-armed {
+  background: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+
+.dot-testing {
+  background: #94a3b8;
+}
+
+.toggle-label-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggle-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.toggle-armed .toggle-title {
+  color: #991b1b;
+}
+
+.toggle-subtitle {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.toggle-armed .toggle-subtitle {
+  color: #b91c1c;
 }
 
 /* ── KPI Metric Badges ─────────────────────────────────────────── */
@@ -90,31 +142,18 @@
   margin-top: 6px;
 }
 
-.box-danger {
-  border-left: 4px solid #ef4444;
-}
-.box-danger .metric-val {
-  color: #dc2626;
-}
-
-.box-safe {
-  border-left: 4px solid #10b981;
-}
-.box-safe .metric-val {
-  color: #059669;
-}
-
-.box-b1 {
-  border-left: 4px solid #f97316;
-}
-.box-b2 {
-  border-left: 4px solid #3b82f6;
+.metric-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 /* ── Telecom Live Tester Bar ───────────────────────────────────── */
 .test-bar-card {
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 14px 20px;
   display: flex;

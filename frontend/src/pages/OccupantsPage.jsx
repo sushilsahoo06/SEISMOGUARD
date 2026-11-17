@@ -31,7 +31,6 @@ export default function OccupantsPage() {
   });
 
   // Emergency Broadcast State
-  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
   const [broadcastBuilding, setBroadcastBuilding] = useState('All');
   const [broadcasting, setBroadcasting] = useState(false);
   const [broadcastResult, setBroadcastResult] = useState(null);
@@ -345,8 +344,8 @@ export default function OccupantsPage() {
       setTestFeedback({
         type: res.ok ? 'success' : 'error',
         text: res.ok
-          ? `📞 Voice Call Dispatched! Twilio SID: ${data.result?.sid}. Receiver will hear the automated evacuation alert and the call will automatically hang up.`
-          : `⚠️ Call Notice: ${data.error}`,
+          ? `Voice Call Dispatched! Twilio SID: ${data.result?.sid}. Receiver will hear the automated evacuation alert and the call will automatically hang up.`
+          : `Call Notice: ${data.error}`,
       });
       loadAlertLogs();
     } catch (err) {
@@ -377,8 +376,8 @@ export default function OccupantsPage() {
       setTestFeedback({
         type: res.ok ? 'success' : 'error',
         text: res.ok
-          ? `💬 Test SMS Dispatched! Twilio SID: ${data.sid}.`
-          : `⚠️ SMS Notice: ${data.error}`,
+          ? `Test SMS Dispatched! Twilio SID: ${data.sid}.`
+          : `SMS Notice: ${data.error}`,
       });
       loadAlertLogs();
     } catch (err) {
@@ -409,8 +408,8 @@ export default function OccupantsPage() {
       setTestFeedback({
         type: res.ok ? 'success' : 'error',
         text: res.ok
-          ? `🟢 WhatsApp Message Dispatched! SID: ${data.sid}`
-          : `⚠️ WhatsApp Notice: ${data.error}`,
+          ? `WhatsApp Message Dispatched! SID: ${data.sid}`
+          : `WhatsApp Notice: ${data.error}`,
       });
       loadAlertLogs();
     } catch (err) {
@@ -441,7 +440,7 @@ export default function OccupantsPage() {
       if (res.ok) {
         setUploadFeedback({
           type: 'success',
-          text: `🎉 Imported ${data.insertedCount} residents successfully from "${file.name}"!`,
+          text: `Imported ${data.insertedCount} residents successfully from "${file.name}"!`,
         });
         loadOccupants();
       } else {
@@ -457,73 +456,95 @@ export default function OccupantsPage() {
 
   return (
     <div className="occupants-page">
-      {/* ── Top Header & KPI Summary Cards ────────────────────────── */}
+      {/* ── Top Header & Master Alert Dispatch Toggle ─────────────── */}
       <div className="page-header-flex">
         <div>
-          <h2>👥 Emergency Directory & Automated Calling Dispatch</h2>
-          <p>Manage building occupants, emergency family contacts, and dispatch automated Twilio voice calls, SMS, and WhatsApp alerts.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 700, color: '#0f172a' }}>
+              Emergency Directory & Automated Alert Dispatch
+            </h2>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '3px 8px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' }}>
+              Telecom Service
+            </span>
+          </div>
+          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.875rem' }}>
+            Automated evacuation calling and SMS notification system for building occupants and registered emergency contacts.
+          </p>
         </div>
+
+        {/* ── Single Master Alert Toggle (Safe Testing vs Live Broadcast) ── */}
         <div className="header-actions">
           <button
             type="button"
-            className={`btn-auto-pill ${autoArmed ? 'pill-auto-armed' : 'pill-auto-off'}`}
+            className={`btn-alert-master-toggle ${autoArmed ? 'toggle-armed' : 'toggle-testing'}`}
             onClick={handleToggleAuto}
-            title="Toggle autonomous emergency dispatch on vibration"
+            title={autoArmed ? 'Click to pause calls/SMS and enter safe sensor testing mode' : 'Click to arm emergency calls and SMS for live events'}
           >
-            {autoArmed ? '⚡ Auto-Dispatch on Vibration: ARMED (ON) 🔴' : '⚡ Auto-Dispatch: OFF ⚪'}
-          </button>
-          <button className="btn-broadcast-main" onClick={() => setShowBroadcastModal(true)}>
-            🚨 TRIGGER EVACUATION BROADCAST
+            <span className={`toggle-dot ${autoArmed ? 'dot-armed' : 'dot-testing'}`} />
+            <div className="toggle-label-wrap">
+              <span className="toggle-title">
+                {autoArmed ? 'Emergency Alerts: ARMED (Live Mode)' : 'Emergency Alerts: OFF (Testing Mode)'}
+              </span>
+              <span className="toggle-subtitle">
+                {autoArmed
+                  ? 'Calls & SMS active — critical shaking will alert all occupants'
+                  : 'Calls & SMS paused — safe to shake and test sensors'}
+              </span>
+            </div>
           </button>
         </div>
       </div>
 
-      {/* ── Real-Time Autonomous Live Incident Banners ────────────── */}
+      {/* ── Real-Time Status & Incident Banners ─────────────────────── */}
       {autonomousNotice && (
         <div className="autonomous-live-alert-banner">
-          <span className="pulse-icon">🚨</span>
           <div>
-            <strong>AUTONOMOUS EMERGENCY ALERT DISPATCHED!</strong>
-            <div>{autonomousNotice}</div>
+            <strong>AUTONOMOUS EMERGENCY ALERT DISPATCHED:</strong> {autonomousNotice}
           </div>
         </div>
       )}
 
-      {autoArmed && (
-        <div className="auto-armed-status-strip">
-          <span className="pulse-dot">🔴</span>
-          <span>
-            <strong>AUTONOMOUS LIFE-SAFETY MODE ARMED:</strong> Monitoring live vibration from SW-420 & ADXL345 sensors.
-            {liveVibrating
-              ? ' 💥 SEISMIC SHAKING DETECTED! Processing alert dispatch...'
-              : ' No manual button click needed — calls and messages will dispatch automatically to you and your family the instant shaking begins!'}
-          </span>
-        </div>
-      )}
+      <div className={`auto-armed-status-strip ${autoArmed ? 'strip-armed' : 'strip-testing'}`}>
+        <span className={`status-indicator-dot ${autoArmed ? 'dot-danger' : 'dot-neutral'}`} />
+        <span>
+          {autoArmed ? (
+            <>
+              <strong>Emergency Life-Safety Mode Armed:</strong> Monitoring live vibration from SW-420 & ADXL345 sensors.
+              {liveVibrating
+                ? ' Seismic vibration detected — processing automated emergency calls and SMS...'
+                : ' Automated phone calls and SMS alerts will automatically dispatch to all registered occupants and relatives if critical structural shaking is detected.'}
+            </>
+          ) : (
+            <>
+              <strong>Sensor Testing Mode Active:</strong> Automatic voice calls and SMS alerts are currently paused. You can shake, tap, or tilt sensors freely for demonstration and testing without dispatching phone notifications.
+            </>
+          )}
+        </span>
+      </div>
 
       {/* ── KPI Metric Badges ─────────────────────────────────────── */}
       <div className="metrics-row">
-        <div className="metric-box box-total">
+        <div className="metric-box">
           <div className="metric-label">Total Occupants</div>
           <div className="metric-val">{stats.total}</div>
           <div className="metric-sub">Registered across buildings</div>
         </div>
-        <div className="metric-box box-danger">
-          <div className="metric-label">Inside Building 🔴</div>
-          <div className="metric-val">{stats.inside}</div>
+        <div className="metric-box">
+          <div className="metric-label">Inside Building</div>
+          <div className="metric-val" style={{ color: '#dc2626' }}>{stats.inside}</div>
           <div className="metric-sub">Target for Voice Call & Evacuation SMS</div>
         </div>
-        <div className="metric-box box-safe">
-          <div className="metric-label">Evacuated / Safe 🟢</div>
-          <div className="metric-val">{stats.evacuated}</div>
+        <div className="metric-box">
+          <div className="metric-label">Evacuated / Safe</div>
+          <div className="metric-val" style={{ color: '#16a34a' }}>{stats.evacuated}</div>
           <div className="metric-sub">Assembly ground confirmed</div>
         </div>
-        <div className="metric-box box-b1">
+        <div className="metric-box">
           <div className="metric-label">Building 1 (Unprotected)</div>
           <div className="metric-val">{stats.b1Count}</div>
-          <div className="metric-sub">Fixed-Base High-Risk Zone</div>
+          <div className="metric-sub">Fixed-Base Structure</div>
         </div>
-        <div className="metric-box box-b2">
+        <div className="metric-box">
           <div className="metric-label">Building 2 (Resistant)</div>
           <div className="metric-val">{stats.b2Count}</div>
           <div className="metric-sub">Base-Isolated Structure</div>
@@ -533,10 +554,9 @@ export default function OccupantsPage() {
       {/* ── Twilio Direct Test & System Verification Bar ───────────── */}
       <div className="test-bar-card">
         <div className="test-bar-header">
-          <span className="test-icon">🛠️</span>
           <div>
             <strong>Twilio Telecom Live Verification</strong>
-            <span className="test-sub"> — Test Automated Voice Call (with auto-cut on pickup), SMS, or WhatsApp on any phone:</span>
+            <span className="test-sub"> — Test Automated Voice Call (auto-cuts on pickup), SMS, or WhatsApp on a single number:</span>
           </div>
         </div>
         <div className="test-bar-controls">
@@ -548,13 +568,13 @@ export default function OccupantsPage() {
             onChange={(e) => setTestPhone(e.target.value)}
           />
           <button className="btn-test-action btn-call" onClick={runTestCall} disabled={testingCall}>
-            {testingCall ? 'Dialing...' : '📞 Test Voice Call (Auto-Cut)'}
+            {testingCall ? 'Dialing...' : 'Test Voice Call'}
           </button>
           <button className="btn-test-action btn-sms" onClick={runTestSMS} disabled={testingSMS}>
-            {testingSMS ? 'Sending...' : '💬 Test SMS'}
+            {testingSMS ? 'Sending...' : 'Test SMS'}
           </button>
           <button className="btn-test-action btn-wa" onClick={runTestWA} disabled={testingWA}>
-            {testingWA ? 'Sending...' : '🟢 Test WhatsApp'}
+            {testingWA ? 'Sending...' : 'Test WhatsApp'}
           </button>
         </div>
         {testFeedback && (
@@ -570,7 +590,7 @@ export default function OccupantsPage() {
           <input
             type="text"
             className="search-input"
-            placeholder="🔍 Search resident name, phone, flat, or relative..."
+            placeholder="Search resident name, phone, flat, or relative..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -591,18 +611,18 @@ export default function OccupantsPage() {
             onChange={(e) => setFilterStatus(e.target.value)}
           >
             <option value="All">All Statuses</option>
-            <option value="Inside Building">🔴 Inside Building</option>
-            <option value="Evacuated / Safe">🟢 Evacuated / Safe</option>
+            <option value="Inside Building">Inside Building</option>
+            <option value="Evacuated / Safe">Evacuated / Safe</option>
           </select>
         </div>
 
         <div className="toolbar-right">
           <button className="btn-action btn-add" onClick={openAddModal}>
-            ➕ Add Resident
+            Add Resident
           </button>
 
           <label className="btn-action btn-upload">
-            📁 {uploadingFile ? 'Importing...' : 'Import Excel / CSV'}
+            {uploadingFile ? 'Importing...' : 'Import Excel / CSV'}
             <input
               type="file"
               ref={fileInputRef}
@@ -618,7 +638,7 @@ export default function OccupantsPage() {
             download="SHM_Occupants_Template.xlsx"
             className="btn-action btn-secondary"
           >
-            📥 Excel Template
+            Excel Template
           </a>
 
           <a
@@ -626,7 +646,7 @@ export default function OccupantsPage() {
             download="SHM_Occupants_Export.xlsx"
             className="btn-action btn-secondary"
           >
-            📤 Export Excel
+            Export Excel
           </a>
         </div>
       </div>
@@ -661,7 +681,7 @@ export default function OccupantsPage() {
             ) : occupants.length === 0 ? (
               <tr>
                 <td colSpan="7" className="text-center py-8 text-gray-500">
-                  No occupants match your current filters. Click <strong>"➕ Add Resident"</strong> or <strong>"Import Excel"</strong> to add occupants.
+                  No occupants match your current filters. Click <strong>"Add Resident"</strong> or <strong>"Import Excel"</strong> to register occupants.
                 </td>
               </tr>
             ) : (
@@ -683,7 +703,7 @@ export default function OccupantsPage() {
                     <td>
                       <div className="status-cell">
                         <span className={`status-pill ${isInside ? 'pill-inside' : 'pill-evacuated'}`}>
-                          {isInside ? '🔴 Inside Building' : '🟢 Evacuated / Safe'}
+                          {isInside ? 'Inside Building' : 'Evacuated / Safe'}
                         </span>
                         <button
                           className="btn-toggle-status"
@@ -703,7 +723,7 @@ export default function OccupantsPage() {
                               <span className="relation-tag">{occ.relative_relation}</span>
                             )}
                           </div>
-                          <div className="relative-phone">📞 {occ.relative_phone || 'No phone'}</div>
+                          <div className="relative-phone">{occ.relative_phone || 'No phone'}</div>
                         </div>
                       ) : (
                         <span className="text-muted">None registered</span>
@@ -716,27 +736,27 @@ export default function OccupantsPage() {
                           title="Auto-Hangup Voice Call"
                           onClick={() => handleDirectCall(occ.phone, occ.name, occ.building_id)}
                         >
-                          📞 Call
+                          Call
                         </button>
                         <button
                           className="btn-direct-sms"
                           title="Evacuation SMS"
                           onClick={() => handleDirectSMS(occ.phone, occ.name, occ.building_id)}
                         >
-                          💬 SMS
+                          SMS
                         </button>
                       </div>
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <button className="btn-icon" onClick={() => openEditModal(occ)} title="Edit Details">
-                        ✏️
+                        Edit
                       </button>
                       <button
                         className="btn-icon btn-icon-del"
                         onClick={() => handleDelete(occ.id, occ.name)}
                         title="Delete Occupant"
                       >
-                        🗑️
+                        Delete
                       </button>
                     </td>
                   </tr>
@@ -751,11 +771,15 @@ export default function OccupantsPage() {
       <div className="logs-card">
         <div className="logs-header">
           <div>
-            <h3>📋 Live Emergency Alert Audit Trail</h3>
-            <p className="logs-sub">Real-time log of automated calls, resident SMS, and family advisory messages sent via Twilio.</p>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>
+              Emergency Alert Audit Trail
+            </h3>
+            <p className="logs-sub" style={{ margin: '4px 0 0 0', fontSize: '0.825rem', color: '#64748b' }}>
+              Real-time persistent log of automated voice calls, resident SMS, and family advisory notifications dispatched via Twilio.
+            </p>
           </div>
           <button className="btn-action btn-secondary" onClick={loadAlertLogs} disabled={loadingLogs}>
-            🔄 {loadingLogs ? 'Refreshing...' : 'Refresh Logs'}
+            {loadingLogs ? 'Refreshing...' : 'Refresh Logs'}
           </button>
         </div>
 
@@ -814,12 +838,14 @@ export default function OccupantsPage() {
         <div className="modal-backdrop">
           <div className="modal-content">
             <div className="modal-header">
-              <h3>{editingOccupant ? '✏️ Edit Occupant Details' : '➕ Add Resident to Emergency Directory'}</h3>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>
+                {editingOccupant ? 'Edit Resident Details' : 'Add Resident to Emergency Directory'}
+              </h3>
               <button className="btn-close" onClick={() => setShowAddModal(false)}>✕</button>
             </div>
             <form onSubmit={handleSaveOccupant}>
               <div className="modal-body">
-                <div className="form-section-title">🏢 Resident Information</div>
+                <div className="form-section-title">Resident Information</div>
                 <div className="form-grid">
                   <div className="form-group">
                     <label>Full Name *</label>
@@ -874,14 +900,14 @@ export default function OccupantsPage() {
                   <div className="form-group">
                     <label>Current Evacuation Status</label>
                     <select name="status" value={formData.status} onChange={handleFormChange}>
-                      <option value="Inside Building">🔴 Inside Building (High Risk)</option>
-                      <option value="Evacuated / Safe">🟢 Evacuated / Safe</option>
+                      <option value="Inside Building">Inside Building (High Priority)</option>
+                      <option value="Evacuated / Safe">Evacuated / Safe</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="form-section-title" style={{ marginTop: '20px' }}>
-                  👨‍👩‍👦 Emergency Family / Relative Contact (Receives Advisory SMS)
+                  Emergency Family / Relative Contact (Receives Advisory SMS)
                 </div>
                 <div className="form-grid">
                   <div className="form-group">
@@ -932,118 +958,6 @@ export default function OccupantsPage() {
           </div>
         </div>
       )}
-
-      {/* ── MODAL: Emergency Broadcast Confirmation ────────────────── */}
-      {showBroadcastModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content modal-broadcast">
-            <div className="modal-header modal-header-danger">
-              <h3>🚨 Emergency Evacuation Calling & SMS Broadcast</h3>
-              <button className="btn-close" onClick={() => setShowBroadcastModal(false)}>✕</button>
-            </div>
-
-            <div className="modal-body">
-              <div className="broadcast-warning-box">
-                <strong>CRITICAL LIFE-SAFETY ACTION:</strong>
-                <p>
-                  You are preparing to dispatch automated evacuation calls and emergency messages to all residents currently registered as <strong>"Inside Building"</strong>.
-                </p>
-                <ul>
-                  <li><strong>Automated Voice Call:</strong> Places phone calls speaking evacuation instructions in English/Hindi and automatically hangs up upon completion.</li>
-                  <li><strong>Occupant SMS:</strong> Sends direct high-priority evacuation instructions to residents inside the building.</li>
-                  <li><strong>WhatsApp Alert:</strong> Delivers emergency warnings directly to WhatsApp mobile devices.</li>
-                  <li><strong>Relative Advisory Notification:</strong> Sends an alert message to each resident's emergency family contact (e.g. <em>"⚠️ Your relative Sushil is in an earthquake-affected building. Rescue operations underway."</em>).</li>
-                </ul>
-              </div>
-
-              {/* ── AUTONOMOUS VIBRATION DISPATCH TOGGLE (NO CONFIRM BUTTON NEEDED) ── */}
-              <div className={`autonomous-modal-card ${autoArmed ? 'auto-card-active' : 'auto-card-idle'}`}>
-                <div className="auto-modal-header">
-                  <div className="auto-modal-text">
-                    <div className="auto-modal-badge">
-                      {autoArmed ? '⚡ AUTONOMOUS DISPATCH: ON (ARMED)' : '⚪ AUTONOMOUS DISPATCH: OFF'}
-                    </div>
-                    <h4>Auto-Dispatch on Vibration (Bypasses Confirm Button)</h4>
-                    <p>
-                      When this is <strong>ON</strong>, you <strong>do not need to click the Confirm Dispatch button</strong>.
-                      As soon as physical vibration is detected by the ESP32 (SW-420 or ADXL345), the system will automatically call and text <strong>both you and your family contacts</strong>!
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className={`btn-auto-toggle-switch ${autoArmed ? 'btn-switch-on' : 'btn-switch-off'}`}
-                    onClick={handleToggleAuto}
-                  >
-                    {autoArmed ? '⚡ ARMED (ON)' : '⚪ TURN ON'}
-                  </button>
-                </div>
-
-                {autoArmed && (
-                  <div className="auto-armed-callout">
-                    <span className="live-radar-dot">🔴</span>
-                    <div>
-                      <strong>MANUAL CONFIRMATION BYPASSED:</strong> The system is actively waiting for vibration.
-                      Start shaking the building or sensors to trigger automated calls and messages immediately!
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="form-group" style={{ marginTop: '16px' }}>
-                <label><strong>Target Building:</strong></label>
-                <select
-                  value={broadcastBuilding}
-                  onChange={(e) => setBroadcastBuilding(e.target.value)}
-                  className="filter-select"
-                  style={{ width: '100%', marginTop: '6px' }}
-                >
-                  <option value="All">All Buildings (Building 1 & Building 2)</option>
-                  <option value="Building 1">Building 1 Only (Unprotected - Severe Risk)</option>
-                  <option value="Building 2">Building 2 Only (Damped / Resistant)</option>
-                </select>
-              </div>
-
-              {broadcastResult && (
-                <div className={`broadcast-result-box ${broadcastResult.status === 'success' ? 'res-success' : 'res-error'}`}>
-                  <h4>{broadcastResult.status === 'success' ? '🎉 Broadcast Dispatched Successfully!' : 'Broadcast Response'}</h4>
-                  <p>{broadcastResult.message}</p>
-                  {broadcastResult.summary && (
-                    <div className="result-stats-grid">
-                      <div><strong>{broadcastResult.summary.totalOccupantsInside}</strong> Residents Inside</div>
-                      <div><strong>{broadcastResult.summary.callsDispatched}</strong> Voice Calls Dispatched</div>
-                      <div><strong>{broadcastResult.summary.smsDispatched}</strong> SMS Dispatched</div>
-                      <div><strong>{broadcastResult.summary.relativesNotified}</strong> Relatives Notified</div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => { setShowBroadcastModal(false); setBroadcastResult(null); }}
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                className={`btn-danger-execute ${autoArmed ? 'btn-pulse-glow' : ''}`}
-                onClick={handleBroadcast}
-                disabled={broadcasting}
-              >
-                {broadcasting
-                  ? '⏳ Dispatching Emergency Calls & SMS...'
-                  : autoArmed
-                    ? '⚡ Armed on Vibration (Or Click to Dispatch Manually Now)'
-                    : '🚨 Confirm & Dispatch Emergency Broadcast'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-

@@ -2,14 +2,56 @@ import React from 'react';
 import BaseSensorChart from '../components/BaseSensorChart';
 import StructuralHealthCard from '../components/StructuralHealthCard';
 import FftSpectrumChart from '../components/FftSpectrumChart';
+import AiSeismicBanner from '../components/AiSeismicBanner';
 
 // Color palette
 const C1 = { line: '#2563eb', bg: 'rgba(37,99,235,0.08)' };  // Building 1 — Blue
 const C2 = { line: '#10b981', bg: 'rgba(16,185,129,0.08)' }; // Building 2 — Green
 
-export default function FrequencyPage({ labels, ax1, ay1, az1, ax2, ay2, az2, ml }) {
+export default function FrequencyPage({
+  labels, ax1, ay1, az1, ax2, ay2, az2, ml,
+  alarm1 = 0, alarm2 = 0, onOpenEventsModal, serverUrl
+}) {
   return (
     <div>
+      {/* ── Phase 4: Machine Learning Seismic Detection & EEW Banner (Accelerometer Only) ─ */}
+      <AiSeismicBanner
+        ml={ml}
+        onOpenEventsModal={onOpenEventsModal}
+        serverUrl={serverUrl}
+      />
+
+      {/* ── Civil Engineering Structural Collapse Alert Banner (Accelerometer Only) ─────── */}
+      <div className={`structural-alert-banner ${alarm1 === 2 ? 'alert-critical' : alarm1 === 1 ? 'alert-warning' : 'alert-normal'}`}>
+        <div className="alert-content">
+          <span className="alert-icon">
+            {alarm1 === 2 ? '🚨' : alarm1 === 1 ? '⚠️' : '🛡️'}
+          </span>
+          <div className="alert-text-block">
+            <div className="alert-title">
+              {alarm1 === 2
+                ? 'CRITICAL COLLAPSE IMMINENT — BUILDING 1 (UNPROTECTED) EXCEEDING ULTIMATE CAPACITY'
+                : alarm1 === 1
+                  ? 'STRUCTURAL YIELD WARNING — BUILDING 1 UNDER SEVERE RESONANT EXCITATION'
+                  : 'STRUCTURAL INTEGRITY SECURE — VIBRATION WITHIN DESIGN ELASTIC LIMITS'}
+            </div>
+            <div className="alert-desc">
+              Building 1: {alarm1 === 2 ? '🔴 RED ZONE SPIKE (Buzzer Siren Active)' : alarm1 === 1 ? '🟡 YELLOW ZONE (Intermittent Warning Beeps)' : '🟢 GREEN ZONE (Safe Elastic Vibration)'}
+              &nbsp;·&nbsp;
+              Building 2 (Resistant): {alarm2 === 2 ? '🔴 CRITICAL' : alarm2 === 1 ? '🟡 WARNING' : '🟢 DAMPED & PROTECTED (No Buzzer)'}
+            </div>
+          </div>
+        </div>
+        <div className="alert-badges">
+          <span className={`status-pill ${alarm1 === 2 ? 'pill-danger' : alarm1 === 1 ? 'pill-warning' : 'pill-safe'}`}>
+            B1 Buzzer: {alarm1 === 2 ? 'SIREN ON 🔊' : alarm1 === 1 ? 'PULSING ⚠️' : 'SILENT ⚪'}
+          </span>
+          <span className="status-pill pill-b2">
+            B2 Isolation: ACTIVE 🛡️
+          </span>
+        </div>
+      </div>
+
       {/* ── Phase 4.2: Real-Time Structural Health & Resonance Card ─── */}
       <StructuralHealthCard ml={ml} />
 

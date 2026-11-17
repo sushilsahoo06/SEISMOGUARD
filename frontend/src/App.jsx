@@ -6,7 +6,6 @@ import VibrationPage from './pages/VibrationPage';
 import OrientationPage from './pages/OrientationPage';
 import PostAnalysisPage from './pages/PostAnalysisPage';
 import OccupantsPage from './pages/OccupantsPage';
-import AiSeismicBanner from './components/AiSeismicBanner';
 import MlEventsModal from './components/MlEventsModal';
 import './App.css';
 
@@ -167,53 +166,29 @@ export default function App() {
             <NavLink to="/frequency" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Accelerometer</NavLink>
             <NavLink to="/vibration" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Vibration</NavLink>
             <NavLink to="/orientation" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Orientation</NavLink>
-            <NavLink to="/post-analysis" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'} style={{ background: '#eff6ff', color: '#2563eb', fontWeight: 600 }}>📊 Post-Event Report</NavLink>
-            <NavLink to="/occupants" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'} style={{ background: '#fef2f2', color: '#b91c1c', fontWeight: 700, borderColor: '#fca5a5' }}>🚨 Evacuation & Alerts</NavLink>
+            <NavLink to="/post-analysis" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'} style={{ background: '#eff6ff', color: '#2563eb', fontWeight: 600 }}>Post-Event Report</NavLink>
+            <NavLink to="/occupants" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'} style={{ background: '#fef2f2', color: '#b91c1c', fontWeight: 700, borderColor: '#fca5a5' }}>Evacuation & Alerts</NavLink>
           </nav>
         </header>
-
-        {/* ── Phase 4: Machine Learning Seismic Detection & EEW Banner ─ */}
-        <AiSeismicBanner
-          ml={mlState}
-          onOpenEventsModal={() => setIsEventsModalOpen(true)}
-          serverUrl={SOCKET_SERVER_URL}
-        />
-
-        {/* ── Civil Engineering Structural Collapse Alert Banner ─────── */}
-        <div className={`structural-alert-banner ${alarm1 === 2 ? 'alert-critical' : alarm1 === 1 ? 'alert-warning' : 'alert-normal'}`}>
-          <div className="alert-content">
-            <span className="alert-icon">
-              {alarm1 === 2 ? '🚨' : alarm1 === 1 ? '⚠️' : '🛡️'}
-            </span>
-            <div className="alert-text-block">
-              <div className="alert-title">
-                {alarm1 === 2
-                  ? 'CRITICAL COLLAPSE IMMINENT — BUILDING 1 (UNPROTECTED) EXCEEDING ULTIMATE CAPACITY'
-                  : alarm1 === 1
-                    ? 'STRUCTURAL YIELD WARNING — BUILDING 1 UNDER SEVERE RESONANT EXCITATION'
-                    : 'STRUCTURAL INTEGRITY SECURE — VIBRATION WITHIN DESIGN ELASTIC LIMITS'}
-              </div>
-              <div className="alert-desc">
-                Building 1: {alarm1 === 2 ? '🔴 RED ZONE SPIKE (Buzzer Siren Active)' : alarm1 === 1 ? '🟡 YELLOW ZONE (Intermittent Warning Beeps)' : '🟢 GREEN ZONE (Safe Elastic Vibration)'}
-                &nbsp;·&nbsp;
-                Building 2 (Resistant): {alarm2 === 2 ? '🔴 CRITICAL' : alarm2 === 1 ? '🟡 WARNING' : '🟢 DAMPED & PROTECTED (No Buzzer)'}
-              </div>
-            </div>
-          </div>
-          <div className="alert-badges">
-            <span className={`status-pill ${alarm1 === 2 ? 'pill-danger' : alarm1 === 1 ? 'pill-warning' : 'pill-safe'}`}>
-              B1 Buzzer: {alarm1 === 2 ? 'SIREN ON 🔊' : alarm1 === 1 ? 'PULSING ⚠️' : 'SILENT ⚪'}
-            </span>
-            <span className="status-pill pill-b2">
-              B2 Isolation: ACTIVE 🛡️
-            </span>
-          </div>
-        </div>
 
         {/* ── Routes ─────────────────────────────────────────────────── */}
         <Routes>
           <Route path="/" element={<Navigate to="/frequency" replace />} />
-          <Route path="/frequency" element={<FrequencyPage labels={labels} ax1={ax1} ay1={ay1} az1={az1} ax2={ax2} ay2={ay2} az2={az2} ml={mlState} />} />
+          <Route
+            path="/frequency"
+            element={
+              <FrequencyPage
+                labels={labels}
+                ax1={ax1} ay1={ay1} az1={az1}
+                ax2={ax2} ay2={ay2} az2={az2}
+                ml={mlState}
+                alarm1={alarm1}
+                alarm2={alarm2}
+                onOpenEventsModal={() => setIsEventsModalOpen(true)}
+                serverUrl={SOCKET_SERVER_URL}
+              />
+            }
+          />
           <Route path="/vibration" element={<VibrationPage labels={labels} vib1={vib1} vib2={vib2} sw420_1={sw420_1} sw420_2={sw420_2} vibCount1={vibCount1} vibCount2={vibCount2} ml={mlState} />} />
           <Route path="/orientation" element={<OrientationPage labels={labels} mag1={mag1} roll1={roll1} pitch1={pitch1} mag2={mag2} roll2={roll2} pitch2={pitch2} />} />
           <Route path="/post-analysis" element={<PostAnalysisPage />} />

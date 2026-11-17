@@ -13,9 +13,6 @@ export default function FrequencyPage({ labels, ax1, ay1, az1, ax2, ay2, az2, ml
       {/* ── Phase 4.2: Real-Time Structural Health & Resonance Card ─── */}
       <StructuralHealthCard ml={ml} />
 
-      {/* ── Live Fast Fourier Transform (FFT) Power Spectrum Chart ─── */}
-      <FftSpectrumChart ml={ml} />
-
       <div className="page-header" style={{ marginTop: '24px' }}>
         <h2>Accelerometer — X / Y / Z Axes (ADXL345)</h2>
         <p>
@@ -85,6 +82,11 @@ export default function FrequencyPage({ labels, ax1, ay1, az1, ax2, ay2, az2, ml
           chartType="accel" yAxisLabel="Acceleration (g)" yMin={-2} yMax={2}
         />
 
+      </div>
+
+      {/* ── Live Fast Fourier Transform (FFT) Power Spectrum Chart (Moved to Bottom) ─── */}
+      <div style={{ marginTop: '28px' }}>
+        <FftSpectrumChart ml={ml} />
       </div>
     </div>
   );

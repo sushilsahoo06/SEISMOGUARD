@@ -22,7 +22,7 @@ export default function StructuralHealthCard({ ml }) {
     <div className="structural-health-card">
       <div className="shm-card-header">
         <div>
-          <h3>🌍 Structural Health & Dynamic Response Comparison</h3>
+          <h3>Structural Health & Dynamic Response Comparison</h3>
           <p>Real-time mechanical resonance shift, shock absorption & stiffness evaluation</p>
         </div>
         <div className="shm-header-pills">

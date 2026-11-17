@@ -211,11 +211,20 @@ void setup() {
 void loop() {
   unsigned long startMs = millis();
 
-  float x1 = 0, y1 = 0, z1 = 1.0;
-  float x2 = 0, y2 = 0, z2 = 1.0;
+  float x1 = 0.0f, y1 = 0.0f, z1 = 0.0f;
+  float x2 = 0.0f, y2 = 0.0f, z2 = 0.0f;
 
-  if (has_adxl1) readADXL345(ADXL1, x1, y1, z1);
-  if (has_adxl2) readADXL345(ADXL2, x2, y2, z2);
+  if (has_adxl1) {
+    if (!readADXL345(ADXL1, x1, y1, z1)) {
+      x1 = 0.0f; y1 = 0.0f; z1 = 0.0f;
+    }
+  }
+
+  if (has_adxl2) {
+    if (!readADXL345(ADXL2, x2, y2, z2)) {
+      x2 = 0.0f; y2 = 0.0f; z2 = 0.0f;
+    }
+  }
 
   // Digital vibration sensors
   int vib1 = digitalRead(VIB1_PIN) == HIGH ? 1 : 0;

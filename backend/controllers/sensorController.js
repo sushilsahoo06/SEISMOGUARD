@@ -48,32 +48,8 @@ exports.receiveData = async (req, res, next) => {
       alarm_1     = 0, alarm_2     = 0,
     } = req.body;
 
-    // 🛡️ Intelligent Single-Sensor Auto-Adaptation:
-    // If one physical sensor is offline / disconnected / zeroed out on the breadboard,
-    // auto-synthesize the dual-building comparative response so the dashboard, FFT spectrum,
-    // and damage indices continue functioning without flatlining to 0!
-    const s1Dead = (accel_x_1 === 0 && accel_y_1 === 0 && (accel_z_1 === 0 || accel_z_1 === 1));
-    const s2Active = (accel_x_2 !== 0 || accel_y_2 !== 0 || (accel_z_2 !== 0 && accel_z_2 !== 1));
-
-    if (s1Dead && s2Active) {
-      // Building 1 (Unprotected) experiences unfiltered shock (~2.2x of damped Building 2):
-      accel_x_1 = parseFloat((accel_x_2 * 2.2).toFixed(4));
-      accel_y_1 = parseFloat((accel_y_2 * 2.0).toFixed(4));
-      accel_z_1 = parseFloat(((accel_z_2 - 1.0) * 1.8 + 1.0).toFixed(4));
-      sw420_1 = sw420_2 || (Math.abs(accel_x_1) > 0.35 ? 1 : 0);
-      vib_count_1 = vib_count_2 || (sw420_1 ? 2 : 0);
-    } else {
-      const s2Dead = (accel_x_2 === 0 && accel_y_2 === 0 && (accel_z_2 === 0 || accel_z_2 === 1));
-      const s1Active = (accel_x_1 !== 0 || accel_y_1 !== 0 || (accel_z_1 !== 0 && accel_z_1 !== 1));
-      if (s2Dead && s1Active) {
-        // Building 2 (Resistant) absorbs ~70% of shock wave:
-        accel_x_2 = parseFloat((accel_x_1 * 0.32).toFixed(4));
-        accel_y_2 = parseFloat((accel_y_1 * 0.32).toFixed(4));
-        accel_z_2 = parseFloat(((accel_z_1 - 1.0) * 0.35 + 1.0).toFixed(4));
-        sw420_2 = 0;
-        vib_count_2 = 0;
-      }
-    }
+    // Strict Raw Physical Sensor Mode:
+    // If a sensor is disconnected or dead, keep it strictly at 0 / offline with NO synthetic data generation.
 
     // Compute derived values for both sensors
     const d1 = deriveOrientation(accel_x_1, accel_y_1, accel_z_1);

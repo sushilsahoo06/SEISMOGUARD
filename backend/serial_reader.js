@@ -139,8 +139,14 @@ async function startBridge() {
       const v2 = data.sw420_2 ? `${BG_RED} ◈ VIB ${RESET}` : `${GREEN}○ IDLE${RESET}`;
 
       const pkts = `${DIM}[📦 ${packetCount} pkts]${RESET}`;
-      const b1 = `${CYAN}${BOLD}B1${RESET}(X=${fmtVal(data.accel_x_1)} Y=${fmtVal(data.accel_y_1)} Z=${fmtVal(data.accel_z_1)} | ${v1})`;
-      const b2 = `${MAGENTA}${BOLD}B2${RESET}(X=${fmtVal(data.accel_x_2)} Y=${fmtVal(data.accel_y_2)} Z=${fmtVal(data.accel_z_2)} | ${v2})`;
+      const isDead1 = (!data.accel_x_1 && !data.accel_y_1 && !data.accel_z_1);
+      const isDead2 = (!data.accel_x_2 && !data.accel_y_2 && !data.accel_z_2);
+      const b1 = isDead1
+        ? `${CYAN}${BOLD}B1${RESET}(${RED}OFFLINE / DEAD${RESET})`
+        : `${CYAN}${BOLD}B1${RESET}(X=${fmtVal(data.accel_x_1)} Y=${fmtVal(data.accel_y_1)} Z=${fmtVal(data.accel_z_1)} | ${v1})`;
+      const b2 = isDead2
+        ? `${MAGENTA}${BOLD}B2${RESET}(${RED}OFFLINE / DEAD${RESET})`
+        : `${MAGENTA}${BOLD}B2${RESET}(X=${fmtVal(data.accel_x_2)} Y=${fmtVal(data.accel_y_2)} Z=${fmtVal(data.accel_z_2)} | ${v2})`;
 
       console.log(`${pkts} ${b1}  ${b2}`);
       lastStatus = now;

@@ -236,13 +236,13 @@ class MLInferenceEngine {
         confidence: 0.99,
         damageIndex: 0.0,
         statusMessage: 'Baseline ambient monitoring. Normal structural state.',
-        building1: { pga: 1.0, rms: 0.0035, dominantFreq: 3.44, maxTilt: 0.1, swActiveFraction: 0 },
-        building2: { pga: 1.0, rms: 0.0021, dominantFreq: 3.44, maxTilt: 0.1, swActiveFraction: 0 },
-        attenuation: { shockReductionPct: 70.0, energyDissipationPct: 65.0, frequencyDelta: 0.0 },
+        building1: { pga: 0.0, rms: 0.0, dominantFreq: 0.0, maxTilt: 0.0, swActiveFraction: 0 },
+        building2: { pga: 0.0, rms: 0.0, dominantFreq: 0.0, maxTilt: 0.0, swActiveFraction: 0 },
+        attenuation: { shockReductionPct: 0.0, energyDissipationPct: 0.0, frequencyDelta: 0.0 },
         spectrum: {
           frequencies: defaultFreqs,
-          power1: defaultFreqs.map(f => (f >= 3.1 && f <= 3.8 ? 0.00012 : 0.00001)),
-          power2: defaultFreqs.map(f => (f >= 3.1 && f <= 3.8 ? 0.00003 : 0.000005)),
+          power1: new Array(defaultFreqs.length).fill(0),
+          power2: new Array(defaultFreqs.length).fill(0),
         },
       };
     }

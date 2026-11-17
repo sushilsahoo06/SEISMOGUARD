@@ -114,6 +114,13 @@ function computeSpectrum(signal, fs = SAMPLING_RATE) {
     }
   }
 
+  // 🛡️ Physical Dead Sensor / Rest Guard:
+  // If peak power is negligible (< 0.00005 g²/Hz) or sensor is dead/offline,
+  // there is NO active resonance peak. Keep dominant frequency strictly at 0.0 Hz!
+  if (maxPower < 0.00005) {
+    dominantFreq = 0;
+  }
+
   // Spectral Centroid
   const spectralCentroid = totalPower > 0 ? parseFloat((weightedFreqSum / totalPower).toFixed(2)) : 0;
 

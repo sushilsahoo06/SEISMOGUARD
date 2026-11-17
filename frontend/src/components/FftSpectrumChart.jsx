@@ -40,8 +40,11 @@ export default function FftSpectrumChart({ ml }) {
   const power1 = spectrum?.power1 || new Array(rawFreqs.length).fill(0);
   const power2 = spectrum?.power2 || new Array(rawFreqs.length).fill(0);
 
-  const domFreq1 = ml?.building1?.dominantFreq ?? 0;
-  const domFreq2 = ml?.building2?.dominantFreq ?? 0;
+  // If power spectral density is flatline / zero, force resonant peak to 0 Hz
+  const isB1Active = power1.some((p) => p >= 0.00005);
+  const isB2Active = power2.some((p) => p >= 0.00005);
+  const domFreq1 = isB1Active ? (ml?.building1?.dominantFreq ?? 0) : 0;
+  const domFreq2 = isB2Active ? (ml?.building2?.dominantFreq ?? 0) : 0;
 
   // Dynamic scale calculation so micro-vibrations and ambient peaks are visually clear
   const maxVal = Math.max(0, ...power1, ...power2);
@@ -51,7 +54,7 @@ export default function FftSpectrumChart({ ml }) {
     labels,
     datasets: [
       {
-        label: `B1 (Unprotected) — Resonant Peak: ${domFreq1} Hz`,
+        label: domFreq1 > 0 ? `B1 (Unprotected) — Resonant Peak: ${domFreq1} Hz` : 'B1 (Unprotected) — Peak: 0 Hz (Idle / Off)',
         data: power1,
         borderColor: '#2563eb',
         backgroundColor: 'rgba(37, 99, 235, 0.15)',
@@ -62,7 +65,7 @@ export default function FftSpectrumChart({ ml }) {
         tension: 0.3,
       },
       {
-        label: `B2 (Base-Isolated) — Damped Peak: ${domFreq2} Hz`,
+        label: domFreq2 > 0 ? `B2 (Base-Isolated) — Damped Peak: ${domFreq2} Hz` : 'B2 (Base-Isolated) — Peak: 0 Hz (Idle / Off)',
         data: power2,
         borderColor: '#10b981',
         backgroundColor: 'rgba(16, 185, 129, 0.12)',
@@ -133,8 +136,8 @@ export default function FftSpectrumChart({ ml }) {
           </p>
         </div>
         <div className="fft-actions">
-          <span className="fft-badge-b1">B1 Resonant Peak: {domFreq1} Hz</span>
-          <span className="fft-badge-b2">B2 Damped: {domFreq2} Hz</span>
+          <span className="fft-badge-b1">B1 Resonant Peak: {domFreq1 > 0 ? `${domFreq1} Hz` : '0 Hz (Idle)'}</span>
+          <span className="fft-badge-b2">B2 Damped: {domFreq2 > 0 ? `${domFreq2} Hz` : '0 Hz (Idle)'}</span>
           <button onClick={handleResetZoom} className="btn-chart-action">↺ Reset Zoom</button>
           <button onClick={() => setIsModalOpen(true)} className="btn-chart-action">⛶ Expand</button>
         </div>

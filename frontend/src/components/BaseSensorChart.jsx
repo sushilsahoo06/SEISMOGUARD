@@ -154,8 +154,8 @@ export default function BaseSensorChart({
         <div className="card-header">
           <h3>{title}</h3>
           <div className="header-actions">
-            <button onClick={resetZoom} className="reset-btn">↺ Reset Zoom</button>
-            <span className="expand-badge">🔗 Click to enlarge</span>
+            <button onClick={resetZoom} className="reset-btn">Reset Zoom</button>
+            <span className="expand-badge">Expand</span>
           </div>
         </div>
         <div className="chart-container" style={{ height: "320px" }}>

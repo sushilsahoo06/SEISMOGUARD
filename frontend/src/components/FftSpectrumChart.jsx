@@ -130,7 +130,7 @@ export default function FftSpectrumChart({ ml }) {
     <div className="fft-spectrum-card">
       <div className="fft-header">
         <div className="fft-title-group">
-          <h3>⚡ Live Fast Fourier Transform (FFT) Power Spectrum</h3>
+          <h3>Live Fast Fourier Transform (FFT) Power Spectrum</h3>
           <p>
             Real-time mechanical frequency decomposition (64-Point Radix-2 Cooley-Tukey + Hanning Window)
           </p>
@@ -138,8 +138,8 @@ export default function FftSpectrumChart({ ml }) {
         <div className="fft-actions">
           <span className="fft-badge-b1">B1 Resonant Peak: {domFreq1 > 0 ? `${domFreq1} Hz` : '0 Hz (Idle)'}</span>
           <span className="fft-badge-b2">B2 Damped: {domFreq2 > 0 ? `${domFreq2} Hz` : '0 Hz (Idle)'}</span>
-          <button onClick={handleResetZoom} className="btn-chart-action">↺ Reset Zoom</button>
-          <button onClick={() => setIsModalOpen(true)} className="btn-chart-action">⛶ Expand</button>
+          <button onClick={handleResetZoom} className="btn-chart-action">Reset Zoom</button>
+          <button onClick={() => setIsModalOpen(true)} className="btn-chart-action">Expand</button>
         </div>
       </div>
 

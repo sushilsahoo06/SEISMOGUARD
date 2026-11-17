@@ -36,12 +36,12 @@ export default function MlEventsModal({ isOpen, onClose, serverUrl }) {
       <div className="modal-content ml-events-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title-group">
-            <h2>🌍 AI-Detected Seismic Event History Log</h2>
+            <h2>Seismic Event History Audit Log</h2>
             <p>Persistent audit trail of real-time seismic tremors classified by ML</p>
           </div>
           <div className="modal-header-actions">
             <button onClick={fetchEvents} className="btn-refresh" disabled={loading}>
-              {loading ? 'Refreshing...' : '🔄 Refresh'}
+              {loading ? 'Refreshing...' : 'Refresh'}
             </button>
             <button onClick={onClose} className="btn-close">✕</button>
           </div>
@@ -52,7 +52,6 @@ export default function MlEventsModal({ isOpen, onClose, serverUrl }) {
         <div className="events-table-wrapper">
           {events.length === 0 && !loading ? (
             <div className="empty-events-state">
-              <span className="empty-icon">🛡️</span>
               <h3>No Seismic Tremor Events Recorded Yet</h3>
               <p>The AI False-Alarm Filter has successfully rejected local mechanical knocks and ambient noise. Once a sustained shake or earthquake test occurs, it will automatically log here.</p>
             </div>

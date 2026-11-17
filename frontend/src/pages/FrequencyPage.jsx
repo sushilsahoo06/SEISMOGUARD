@@ -24,9 +24,6 @@ export default function FrequencyPage({
       {/* ── Civil Engineering Structural Collapse Alert Banner (Accelerometer Only) ─────── */}
       <div className={`structural-alert-banner ${alarm1 === 2 ? 'alert-critical' : alarm1 === 1 ? 'alert-warning' : 'alert-normal'}`}>
         <div className="alert-content">
-          <span className="alert-icon">
-            {alarm1 === 2 ? '🚨' : alarm1 === 1 ? '⚠️' : '🛡️'}
-          </span>
           <div className="alert-text-block">
             <div className="alert-title">
               {alarm1 === 2
@@ -36,18 +33,18 @@ export default function FrequencyPage({
                   : 'STRUCTURAL INTEGRITY SECURE — VIBRATION WITHIN DESIGN ELASTIC LIMITS'}
             </div>
             <div className="alert-desc">
-              Building 1: {alarm1 === 2 ? '🔴 RED ZONE SPIKE (Buzzer Siren Active)' : alarm1 === 1 ? '🟡 YELLOW ZONE (Intermittent Warning Beeps)' : '🟢 GREEN ZONE (Safe Elastic Vibration)'}
+              Building 1: {alarm1 === 2 ? 'RED ZONE SPIKE (Buzzer Siren Active)' : alarm1 === 1 ? 'YELLOW ZONE (Intermittent Warning Beeps)' : 'GREEN ZONE (Safe Elastic Vibration)'}
               &nbsp;·&nbsp;
-              Building 2 (Resistant): {alarm2 === 2 ? '🔴 CRITICAL' : alarm2 === 1 ? '🟡 WARNING' : '🟢 DAMPED & PROTECTED (No Buzzer)'}
+              Building 2 (Resistant): {alarm2 === 2 ? 'CRITICAL' : alarm2 === 1 ? 'WARNING' : 'DAMPED & PROTECTED'}
             </div>
           </div>
         </div>
         <div className="alert-badges">
           <span className={`status-pill ${alarm1 === 2 ? 'pill-danger' : alarm1 === 1 ? 'pill-warning' : 'pill-safe'}`}>
-            B1 Buzzer: {alarm1 === 2 ? 'SIREN ON 🔊' : alarm1 === 1 ? 'PULSING ⚠️' : 'SILENT ⚪'}
+            B1 Buzzer: {alarm1 === 2 ? 'ACTIVE' : alarm1 === 1 ? 'PULSING' : 'SILENT'}
           </span>
           <span className="status-pill pill-b2">
-            B2 Isolation: ACTIVE 🛡️
+            B2 Isolation: ACTIVE
           </span>
         </div>
       </div>
@@ -62,7 +59,7 @@ export default function FrequencyPage({
           {' '}vs{' '}
           <span style={{ color: C2.line, fontWeight: 700 }}>● Building 2 (Resistant)</span>
           {' '}— linear acceleration in g &nbsp;·&nbsp;
-          <span style={{ color: '#ef4444', fontWeight: 700 }}>🔴 Red Zone Collapse Threshold: &gt; ±1.0g</span>
+          <span style={{ color: '#ef4444', fontWeight: 700 }}>Red Zone Elastic Limit: &gt; ±1.0g</span>
         </p>
       </div>
       <div className="grid-container">

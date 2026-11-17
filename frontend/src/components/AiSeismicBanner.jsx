@@ -30,29 +30,29 @@ export default function AiSeismicBanner({ ml, onOpenEventsModal, serverUrl }) {
 
   // Visual Themes based on ML State
   let bannerClass = 'ml-banner-ambient';
-  let icon = '🟢';
+  let statusBadge = 'NOMINAL BASELINE';
   let title = 'AI SEISMIC MONITOR — NOMINAL AMBIENT';
   let subtitle = 'Ground motion within normal baseline. Real-time false-alarm rejection active.';
 
   if (eventType === 'DISTURBANCE') {
     bannerClass = 'ml-banner-disturbance';
-    icon = '🟡';
+    statusBadge = 'FILTERED DISTURBANCE';
     title = 'AI FALSE-ALARM REJECTOR — BENIGN DISTURBANCE FILTERED';
     subtitle = 'Isolated impact/knock detected and suppressed. Autonomous evacuation siren safely held.';
   } else if (eventType === 'SEISMIC_TREMOR') {
     if (hazardLevel === 'STRUCTURAL_HAZARD') {
       bannerClass = 'ml-banner-critical';
-      icon = '🚨';
+      statusBadge = 'CRITICAL SEISMIC RISK';
       title = 'CRITICAL SEISMIC COLLAPSE RISK CONFIRMED BY ML';
       subtitle = 'Severe ground shaking exceeding elastic limits. Building 1 at plastic yield threshold!';
     } else if (hazardLevel === 'WARNING') {
       bannerClass = 'ml-banner-warning';
-      icon = '⚠️';
+      statusBadge = 'SEISMIC WARNING';
       title = 'SEISMIC EVENT CONFIRMED — MODERATE TREMOR WARNING';
       subtitle = 'Sustained harmonic ground oscillation detected. Superstructure resonant response active.';
     } else {
       bannerClass = 'ml-banner-minor';
-      icon = '⚡';
+      statusBadge = 'MINOR TREMOR';
       title = 'SEISMIC EVENT DETECTED — MINOR TREMOR';
       subtitle = 'Low-amplitude seismic wave train identified. Structural monitoring engaged.';
     }
@@ -61,13 +61,12 @@ export default function AiSeismicBanner({ ml, onOpenEventsModal, serverUrl }) {
   return (
     <div className={`ai-seismic-banner ${bannerClass}`}>
       <div className="ai-banner-left">
-        <span className="ai-banner-icon">{icon}</span>
         <div className="ai-banner-text">
           <div className="ai-banner-header-row">
             <h3 className="ai-banner-title">{title}</h3>
             {isPWave && (
-              <span className="ai-eew-badge animate-pulse">
-                ⚡ EEW P-Wave Alert (~{leadTime}s S-Wave Lead Time)
+              <span className="ai-eew-badge">
+                EEW P-Wave Alert (~{leadTime}s S-Wave Lead Time)
               </span>
             )}
           </div>
@@ -101,26 +100,24 @@ export default function AiSeismicBanner({ ml, onOpenEventsModal, serverUrl }) {
             onClick={() => handleSimulate('earthquake')}
             disabled={simulating}
             className="btn-ai-events"
-            style={{ background: '#fee2e2', borderColor: '#fca5a5', color: '#991b1b' }}
             title="Simulate 3.5 Hz harmonic earthquake tremor"
           >
-            {simulating ? '⏳ Shaking...' : '⚡ Test Quake'}
+            {simulating ? 'Simulating...' : 'Test Quake'}
           </button>
           <button
             onClick={() => handleSimulate('knock')}
             disabled={simulating}
             className="btn-ai-events"
-            style={{ background: '#fef3c7', borderColor: '#fcd34d', color: '#92400e' }}
             title="Simulate single table knock (demonstrates false-alarm rejection)"
           >
-            🛡️ Test Knock
+            Test Knock
           </button>
           <button
             onClick={onOpenEventsModal}
             className="btn-ai-events"
             title="Open detected seismic events history"
           >
-            📜 Event Log
+            Event Log
           </button>
         </div>
       </div>

@@ -154,7 +154,7 @@ export default function PostAnalysisPage() {
     return null;
   };
 
-  // 📄 DOWNLOAD PUBLICATION-GRADE 3-PAGE CIVIL ENGINEERING REPORT
+  // DOWNLOAD PUBLICATION-GRADE 3-PAGE CIVIL ENGINEERING REPORT
   const handleDownloadDirectPDF = async () => {
     if (!data || !data.hasData) return;
 
@@ -580,8 +580,8 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
   if (error) {
     return (
       <div style={{ padding: '30px', textAlign: 'center', color: '#ef4444' }}>
-        <h3>⚠️ Connection Error</h3>
-        <p>{error}</p>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1rem', fontWeight: 600 }}>Connection Notice</h3>
+        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>{error}</p>
         <button onClick={fetchAnalysis} className="btn-export" style={{ marginTop: '12px' }}>Retry</button>
       </div>
     );
@@ -589,12 +589,12 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
 
   if (!data || !data.hasData) {
     return (
-      <div style={{ padding: '50px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-        <h2 style={{ color: '#0f172a', marginBottom: '8px' }}>📊 No Earthquake Data Recorded Yet</h2>
-        <p style={{ color: '#64748b', maxWidth: '500px', margin: '0 auto 24px' }}>
-          Please connect your ESP32 or run a shake test on Building 1 and Building 2 to generate earthquake acceleration and vibration data.
+      <div style={{ padding: '50px 24px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+        <h2 style={{ color: '#0f172a', marginBottom: '8px', fontSize: '1.25rem', fontWeight: 700 }}>No Earthquake Telemetry Recorded Yet</h2>
+        <p style={{ color: '#64748b', maxWidth: '500px', margin: '0 auto 24px', fontSize: '0.875rem' }}>
+          Connect your ESP32 or simulate seismic excitation on Building 1 and Building 2 to capture dynamic acceleration and vibration waveforms.
         </p>
-        <button onClick={fetchAnalysis} className="btn-export">🔄 Refresh Analysis</button>
+        <button onClick={fetchAnalysis} className="btn-export">Refresh Analysis</button>
       </div>
     );
   }
@@ -659,75 +659,79 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* ── Screen Page Header & Action Controls ───────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', background: '#fff', padding: '18px 24px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: '#fff', padding: '20px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
         <div>
-          <h2 style={{ margin: '0 0 6px 0', fontSize: '1.4rem', color: '#0f172a' }}>
-            🌍 Post-Earthquake Structural Assessment Report
-          </h2>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
-            Comparative seismic telemetry & forensic evaluation between Building 1 (Unprotected) and Building 2 (Earthquake-Resistant).
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em' }}>
+              Post-Earthquake Structural Assessment Report
+            </h2>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '3px 8px', borderRadius: '6px', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' }}>
+              Forensic Analysis
+            </span>
+          </div>
+          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.875rem' }}>
+            Comparative seismic response telemetry: Building 1 (Fixed-Base Unprotected) versus Building 2 (Base-Isolated Resistant).
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          <span style={{ fontSize: '0.8rem', background: autoRefresh ? '#ecfdf5' : '#f1f5f9', color: autoRefresh ? '#059669' : '#64748b', border: `1px solid ${autoRefresh ? '#a7f3d0' : '#cbd5e1'}`, padding: '6px 12px', borderRadius: '20px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: autoRefresh ? '#10b981' : '#94a3b8' }}></span>
-            {autoRefresh ? 'Live Auto-Sync (3s)' : 'Auto-Sync Paused'}
+          <span style={{ fontSize: '0.75rem', background: autoRefresh ? '#f8fafc' : '#f1f5f9', color: autoRefresh ? '#0f766e' : '#64748b', border: '1px solid #e2e8f0', padding: '6px 12px', borderRadius: '6px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: autoRefresh ? '#10b981' : '#94a3b8' }}></span>
+            {autoRefresh ? 'Auto-Sync Active (3s)' : 'Auto-Sync Paused'}
           </span>
 
-          <button onClick={() => setShowKeyModal(true)} className="btn-export" style={{ background: '#7c3aed', color: '#fff' }}>
-            ✨ {aiLoading ? 'Analyzing...' : aiReport ? 'AI Report Active' : 'Generate AI Report (Gemini)'}
+          <button onClick={() => setShowKeyModal(true)} className="btn-export" style={{ background: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1' }}>
+            {aiLoading ? 'Analyzing...' : aiReport ? 'AI Report Ready' : 'Generate AI Report'}
           </button>
 
-          <button onClick={handleDownloadDirectPDF} className="btn-export" style={{ background: '#0284c7', color: '#fff', fontWeight: 700 }}>
-            📥 Download Publication PDF Report
+          <button onClick={handleDownloadDirectPDF} className="btn-export" style={{ background: '#0f172a', color: '#fff', border: '1px solid #0f172a' }}>
+            Download Publication PDF
           </button>
 
-          <button onClick={handleClearSession} className="btn-export" style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5' }}>
-            🗑️ Clear & Start New Test
+          <button onClick={handleClearSession} className="btn-export" style={{ background: '#fff', color: '#64748b', border: '1px solid #e2e8f0' }}>
+            Reset Session Data
           </button>
         </div>
       </div>
 
       {/* ── Event Isolation Banner ─────────────────────────────────── */}
       {eventWindow && eventWindow.hasEvent && (
-        <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '12px 18px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', color: '#1e40af' }}>
-            <span>⚡</span>
-            <span>
-              <b>Seismic Event Auto-Isolated:</b> {eventWindow.eventDurationSec}s active earthquake window ({eventWindow.trimmedSamplesCount} samples @ 20Hz). Quiet resting baseline trimmed automatically.
-            </span>
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '12px 18px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ fontSize: '0.85rem', color: '#334155' }}>
+            <span style={{ fontWeight: 600, color: '#0f172a' }}>Seismic Event Isolated:</span>{' '}
+            {eventWindow.eventDurationSec}s dynamic duration ({eventWindow.trimmedSamplesCount} samples @ 20 Hz). Ambient baseline trimmed.
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Graph View:</span>
+          <div style={{ display: 'flex', gap: '4px', background: '#e2e8f0', padding: '3px', borderRadius: '6px' }}>
             <button
               onClick={() => setTimelineMode('event')}
               style={{
-                padding: '5px 12px',
-                borderRadius: '6px',
-                border: '1px solid #3b82f6',
-                background: timelineMode === 'event' ? '#2563eb' : '#fff',
-                color: timelineMode === 'event' ? '#fff' : '#2563eb',
-                fontSize: '0.8rem',
+                padding: '4px 12px',
+                borderRadius: '4px',
+                border: 'none',
+                background: timelineMode === 'event' ? '#ffffff' : 'transparent',
+                color: timelineMode === 'event' ? '#0f172a' : '#64748b',
+                boxShadow: timelineMode === 'event' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                fontSize: '0.78rem',
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
-              ⚡ Earthquake Focus (Zoomed)
+              Event Window Focus
             </button>
             <button
               onClick={() => setTimelineMode('full')}
               style={{
-                padding: '5px 12px',
-                borderRadius: '6px',
-                border: '1px solid #cbd5e1',
-                background: timelineMode === 'full' ? '#64748b' : '#fff',
-                color: timelineMode === 'full' ? '#fff' : '#64748b',
-                fontSize: '0.8rem',
+                padding: '4px 12px',
+                borderRadius: '4px',
+                border: 'none',
+                background: timelineMode === 'full' ? '#ffffff' : 'transparent',
+                color: timelineMode === 'full' ? '#0f172a' : '#64748b',
+                boxShadow: timelineMode === 'full' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                fontSize: '0.78rem',
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
-              🌐 Full History (All Samples)
+              Full Session (All Data)
             </button>
           </div>
         </div>
@@ -735,12 +739,12 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
 
       {/* ── Gemini API Key & Generator Modal ───────────────────────── */}
       {showKeyModal && (
-        <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', padding: '20px', borderRadius: '12px' }}>
-          <h3 style={{ margin: '0 0 8px 0', color: '#5b21b6', fontSize: '1.1rem' }}>
-            🤖 Gemini AI Civil Structural Engineering Diagnosis
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '20px', borderRadius: '10px' }}>
+          <h3 style={{ margin: '0 0 6px 0', color: '#0f172a', fontSize: '1rem', fontWeight: 600 }}>
+            Gemini AI Structural Forensic Diagnosis
           </h3>
-          <p style={{ color: '#6d28d9', fontSize: '0.85rem', margin: '0 0 12px 0' }}>
-            Gemini will analyze your dual-building acceleration, tilt drift, and damping efficiency to write an executive forensic civil report.
+          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 12px 0' }}>
+            Gemini analyzes dual-building acceleration, drift, and damping efficiency to generate an executive engineering evaluation.
           </p>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <input
@@ -748,17 +752,17 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
               placeholder="Paste your Gemini API Key (Optional: leave empty to use server .env or benchmark)"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid #c4b5fd', fontSize: '0.9rem' }}
+              style={{ flex: 1, padding: '10px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
             />
             <button
               onClick={handleGenerateAIReport}
               disabled={aiLoading}
               className="btn-export"
-              style={{ background: '#7c3aed', color: '#fff', padding: '10px 20px' }}
+              style={{ background: '#0f172a', color: '#fff', border: '1px solid #0f172a', padding: '10px 18px' }}
             >
-              {aiLoading ? 'Generating...' : 'Run Gemini Analysis'}
+              {aiLoading ? 'Analyzing...' : 'Run Forensic Evaluation'}
             </button>
-            <button onClick={() => setShowKeyModal(false)} className="btn-export" style={{ background: '#fff', color: '#64748b' }}>
+            <button onClick={() => setShowKeyModal(false)} className="btn-export" style={{ background: '#fff', color: '#64748b', border: '1px solid #e2e8f0' }}>
               Cancel
             </button>
           </div>
@@ -767,95 +771,92 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
 
       {/* ── AI Generated Forensic Report Display ───────────────────── */}
       {aiReport && (
-        <div style={{ background: '#faf5ff', border: '2px solid #a855f7', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 16px rgba(168,85,247,0.08)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <h3 style={{ margin: 0, color: '#6b21a8', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              ✨ Gemini AI Structural Forensic Assessment
+        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+            <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.05rem', fontWeight: 700 }}>
+              AI Structural Forensic Assessment
             </h3>
-            <span style={{ fontSize: '0.8rem', background: '#f3e8ff', color: '#7e22ce', padding: '4px 10px', borderRadius: '20px', fontWeight: 600 }}>
-              AI Certified Analysis
+            <span style={{ fontSize: '0.75rem', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', padding: '3px 10px', borderRadius: '4px', fontWeight: 600 }}>
+              Diagnostic Model
             </span>
           </div>
-          <div style={{ whiteSpace: 'pre-wrap', color: '#1e1b4b', fontSize: '0.92rem', lineHeight: '1.7', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+          <div style={{ whiteSpace: 'pre-wrap', color: '#334155', fontSize: '0.875rem', lineHeight: '1.7', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             {cleanReportText(aiReport)}
           </div>
         </div>
       )}
 
-      {/* ── Phase 4.3: AI Structural Health Diagnosis & ML Classification ─ */}
+      {/* ── AI Structural Health Diagnosis & ML Classification ─ */}
       {mlAssessment && (
         <div style={{
-          background: mlAssessment.eventType === 'SEISMIC_TREMOR' ? '#fef2f2' : mlAssessment.eventType === 'DISTURBANCE' ? '#fffbeb' : '#f0fdf4',
-          border: `1px solid ${mlAssessment.eventType === 'SEISMIC_TREMOR' ? '#fecaca' : mlAssessment.eventType === 'DISTURBANCE' ? '#fde68a' : '#bbf7d0'}`,
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
           borderRadius: '12px',
-          padding: '18px 22px',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+          padding: '20px 24px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '1.4rem' }}>
-                {mlAssessment.eventType === 'SEISMIC_TREMOR' ? '🚨' : mlAssessment.eventType === 'DISTURBANCE' ? '🛡️' : '🟢'}
-              </span>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>
-                  AI Structural Health Diagnosis: {mlAssessment.eventType === 'SEISMIC_TREMOR' ? 'Confirmed Seismic Tremor' : mlAssessment.eventType === 'DISTURBANCE' ? 'Transient Disturbance Rejected' : 'Nominal Ambient Excitation'}
-                </h3>
-                <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                  Radix-2 FFT Spectrum + Random Forest Decision Model · False-Alarm Rejection Active
-                </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', fontWeight: 600 }}>
+                Machine Learning Damage Diagnostics · Radix-2 FFT + Random Forest
               </div>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.15rem', color: '#0f172a', fontWeight: 700 }}>
+                Diagnosis: {mlAssessment.eventType === 'SEISMIC_TREMOR' ? 'Confirmed Seismic Tremor' : mlAssessment.eventType === 'DISTURBANCE' ? 'Transient Physical Disturbance' : 'Nominal Ambient Baseline'}
+              </h3>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <span style={{
-                background: mlAssessment.hazardLevel === 'STRUCTURAL_HAZARD' ? '#ef4444' : mlAssessment.hazardLevel === 'WARNING' ? '#f59e0b' : '#10b981',
-                color: '#fff',
+                background: mlAssessment.hazardLevel === 'STRUCTURAL_HAZARD' ? '#fef2f2' : mlAssessment.hazardLevel === 'WARNING' ? '#fffbeb' : '#f0fdf4',
+                color: mlAssessment.hazardLevel === 'STRUCTURAL_HAZARD' ? '#dc2626' : mlAssessment.hazardLevel === 'WARNING' ? '#d97706' : '#16a34a',
+                border: `1px solid ${mlAssessment.hazardLevel === 'STRUCTURAL_HAZARD' ? '#fca5a5' : mlAssessment.hazardLevel === 'WARNING' ? '#fcd34d' : '#86efac'}`,
                 padding: '4px 12px',
-                borderRadius: '20px',
+                borderRadius: '6px',
                 fontWeight: 700,
-                fontSize: '0.8rem',
+                fontSize: '0.78rem',
+                letterSpacing: '0.02em',
               }}>
-                Hazard: {mlAssessment.hazardLevel || 'SAFE'}
+                Hazard Level: {mlAssessment.hazardLevel || 'SAFE'}
               </span>
               <span style={{
-                background: '#fff',
-                border: '1px solid #cbd5e1',
-                color: '#334155',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                color: '#475569',
                 padding: '4px 12px',
-                borderRadius: '20px',
+                borderRadius: '6px',
                 fontWeight: 600,
-                fontSize: '0.8rem',
+                fontSize: '0.78rem',
               }}>
-                ML Confidence: {Math.round((mlAssessment.confidence || 1.0) * 100)}%
+                Confidence: {Math.round((mlAssessment.confidence || 1.0) * 100)}%
               </span>
             </div>
           </div>
 
-          <p style={{ margin: '0 0 14px 0', fontSize: '0.9rem', color: '#334155', lineHeight: '1.5' }}>
-            <b>Diagnostic Assessment:</b> {mlAssessment.statusMessage}
+          <p style={{ margin: '0 0 16px 0', fontSize: '0.875rem', color: '#475569', lineHeight: '1.5' }}>
+            <span style={{ fontWeight: 600, color: '#1e293b' }}>Assessment Summary:</span> {mlAssessment.statusMessage}
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', background: '#ffffffcc', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', background: '#f8fafc', padding: '14px 18px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>BUILDING 1 DAMAGE INDEX</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: (mlAssessment.damageIndex || 0) > 0.4 ? '#ef4444' : '#10b981' }}>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.04em' }}>BUILDING 1 DAMAGE INDEX</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: (mlAssessment.damageIndex || 0) > 0.4 ? '#dc2626' : '#16a34a', fontFamily: 'monospace' }}>
                 {((mlAssessment.damageIndex || 0) * 100).toFixed(1)}%
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>B1 RESONANT FREQUENCY</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#2563eb' }}>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.04em' }}>B1 RESONANT FREQUENCY</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>
                 {mlAssessment.dominantFreq1 ? `${mlAssessment.dominantFreq1.toFixed(2)} Hz` : '—'}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>B2 DAMPED FREQUENCY</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#10b981' }}>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.04em' }}>B2 DAMPED FREQUENCY</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>
                 {mlAssessment.dominantFreq2 ? `${mlAssessment.dominantFreq2.toFixed(2)} Hz` : '—'}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>PERIOD SHIFT / DELTA</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#6366f1' }}>
+              <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.04em' }}>PERIOD SHIFT / DELTA</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>
                 {mlAssessment.frequencyDelta ? `Δ ${mlAssessment.frequencyDelta.toFixed(2)} Hz` : 'Synchronous'}
               </div>
             </div>
@@ -864,94 +865,94 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
       )}
 
       {/* ── Metric Scorecards ───────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
         {/* Peak PGA B1 */}
-        <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderLeft: '5px solid #ef4444' }}>
-          <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>BUILDING 1 PEAK SHOCK (PGA)</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#ef4444', margin: '4px 0' }}>
+        <div style={{ background: '#fff', padding: '18px 20px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em' }}>BUILDING 1 PEAK SHOCK (PGA)</div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 700, color: '#dc2626', margin: '6px 0 2px', fontFamily: 'monospace' }}>
             {b1.maxPga} g
           </div>
-          <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Max Lateral Acceleration: {b1.maxAccelX}g</div>
+          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Max Lateral Acceleration: {b1.maxAccelX}g</div>
         </div>
 
         {/* Peak PGA B2 */}
-        <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderLeft: '5px solid #10b981' }}>
-          <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>BUILDING 2 PEAK SHOCK (PGA)</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#10b981', margin: '4px 0' }}>
+        <div style={{ background: '#fff', padding: '18px 20px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em' }}>BUILDING 2 PEAK SHOCK (PGA)</div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 700, color: '#16a34a', margin: '6px 0 2px', fontFamily: 'monospace' }}>
             {b2.maxPga} g
           </div>
-          <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Max Lateral Acceleration: {b2.maxAccelX}g</div>
+          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Max Lateral Acceleration: {b2.maxAccelX}g</div>
         </div>
 
         {/* Damping Efficiency */}
-        <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderLeft: '5px solid #3b82f6' }}>
-          <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>BASE-ISOLATION SHOCK REDUCTION</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#2563eb', margin: '4px 0' }}>
-            🛡️ {dampingEfficiency.shockReductionPct}%
+        <div style={{ background: '#fff', padding: '18px 20px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em' }}>BASE-ISOLATION SHOCK REDUCTION</div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 700, color: '#0f172a', margin: '6px 0 2px', fontFamily: 'monospace' }}>
+            {dampingEfficiency.shockReductionPct}%
           </div>
-          <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Energy Dissipated: {dampingEfficiency.energyDissipatedPct}%</div>
+          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Energy Dissipated: {dampingEfficiency.energyDissipatedPct}%</div>
         </div>
 
         {/* Permanent Tilt (Residual Deformation) */}
-        <div style={{ background: '#fff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', borderLeft: '5px solid #f59e0b' }}>
-          <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>PERMANENT DRIFT (RESIDUAL TILT)</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 700, color: b1.residualTilt > 5 ? '#ef4444' : '#f59e0b', margin: '4px 0' }}>
-            B1: {b1.residualTilt}° <span style={{ fontSize: '1rem', color: '#64748b' }}>vs B2: {b2.residualTilt}°</span>
+        <div style={{ background: '#fff', padding: '18px 20px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em' }}>PERMANENT DRIFT (RESIDUAL TILT)</div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 700, color: b1.residualTilt > 5 ? '#dc2626' : '#d97706', margin: '6px 0 2px', fontFamily: 'monospace' }}>
+            B1: {b1.residualTilt}° <span style={{ fontSize: '1rem', color: '#64748b', fontWeight: 500 }}>vs B2: {b2.residualTilt}°</span>
           </div>
-          <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Plastic deformation after earthquake</div>
+          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Post-event permanent plastic deformation</div>
         </div>
       </div>
 
       {/* ── Civil Engineering Damage Verdicts ────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '14px' }}>
         {/* Building 1 Verdict Card */}
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', border: `2px solid ${b1.color}`, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+        <div style={{ background: '#fff', padding: '20px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem' }}>🏢 Building 1: Unprotected Structure</h3>
-            <span style={{ background: `${b1.color}20`, color: b1.color, padding: '4px 10px', borderRadius: '20px', fontWeight: 700, fontSize: '0.8rem' }}>
+            <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1rem', fontWeight: 700 }}>Building 1: Fixed-Base (Unprotected)</h3>
+            <span style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '3px 8px', borderRadius: '4px', fontWeight: 700, fontSize: '0.75rem' }}>
               {b1.verdict.split('—')[0]}
             </span>
           </div>
-          <p style={{ margin: '0 0 12px 0', color: '#475569', fontSize: '0.9rem', lineHeight: '1.4' }}>
+          <p style={{ margin: '0 0 12px 0', color: '#475569', fontSize: '0.85rem', lineHeight: '1.5' }}>
             {b1.verdict}
           </p>
-          <div style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-            <span>• Max Tilt: <b>{b1.maxTilt}°</b></span>
-            <span>• Cumulative Energy: <b>{b1.totalEnergy}</b></span>
-            <span>• Vibration Pulses: <b>{b1.totalVibCount}</b></span>
+          <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', flexWrap: 'wrap', gap: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+            <span>Max Tilt: <b style={{ color: '#0f172a' }}>{b1.maxTilt}°</b></span>
+            <span>Cumulative Energy: <b style={{ color: '#0f172a' }}>{b1.totalEnergy}</b></span>
+            <span>Vibration Pulses: <b style={{ color: '#0f172a' }}>{b1.totalVibCount}</b></span>
           </div>
         </div>
 
         {/* Building 2 Verdict Card */}
-        <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', border: `2px solid ${b2.color}`, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+        <div style={{ background: '#fff', padding: '20px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem' }}>🛡️ Building 2: Earthquake-Resistant (Isolated)</h3>
-            <span style={{ background: `${b2.color}20`, color: b2.color, padding: '4px 10px', borderRadius: '20px', fontWeight: 700, fontSize: '0.8rem' }}>
+            <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1rem', fontWeight: 700 }}>Building 2: Base-Isolated (Resistant)</h3>
+            <span style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', padding: '3px 8px', borderRadius: '4px', fontWeight: 700, fontSize: '0.75rem' }}>
               PROTECTED
             </span>
           </div>
-          <p style={{ margin: '0 0 12px 0', color: '#475569', fontSize: '0.9rem', lineHeight: '1.4' }}>
+          <p style={{ margin: '0 0 12px 0', color: '#475569', fontSize: '0.85rem', lineHeight: '1.5' }}>
             {b2.verdict}
           </p>
-          <div style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-            <span>• Max Tilt: <b>{b2.maxTilt}°</b></span>
-            <span>• Cumulative Energy: <b>{b2.totalEnergy}</b></span>
-            <span>• Attenuation: <b>{dampingEfficiency.shockReductionPct}% Reduction</b></span>
+          <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', flexWrap: 'wrap', gap: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+            <span>Max Tilt: <b style={{ color: '#0f172a' }}>{b2.maxTilt}°</b></span>
+            <span>Cumulative Energy: <b style={{ color: '#0f172a' }}>{b2.totalEnergy}</b></span>
+            <span>Attenuation: <b style={{ color: '#0f172a' }}>{dampingEfficiency.shockReductionPct}% Reduction</b></span>
           </div>
         </div>
       </div>
 
       {/* ── Main Final Waveform Graph (B1 vs B2) ─────────────────────── */}
-      <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+      <div style={{ background: '#fff', padding: '20px 24px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '4px' }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>
-            📈 Figure 1: Seismic Acceleration Waveform Comparison (B1 Unprotected vs B2 Damped)
+          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>
+            Figure 1 — Seismic Acceleration Waveform Comparison (B1 vs B2)
           </h3>
-          <span style={{ fontSize: '0.8rem', background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: '6px' }}>
-            {timelineMode === 'event' ? '⚡ Zoomed Earthquake Event' : '🌐 Full Session'}
+          <span style={{ fontSize: '0.75rem', background: '#f1f5f9', color: '#475569', padding: '3px 8px', borderRadius: '4px', fontWeight: 600 }}>
+            {timelineMode === 'event' ? 'Focused Event Window' : 'Full Session Telemetry'}
           </span>
         </div>
-        <p style={{ margin: '0 0 16px 0', color: '#64748b', fontSize: '0.85rem' }}>
+        <p style={{ margin: '0 0 16px 0', color: '#64748b', fontSize: '0.825rem' }}>
           Dynamic acceleration record capturing pre-event onset, peak shockwave (PGA), harmonic oscillations, and damping decay envelope.
         </p>
         <div style={{ height: '360px' }}>
@@ -972,17 +973,17 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
         </div>
 
         {/* Technical commentary below chart */}
-        <div style={{ marginTop: '16px', background: '#f8fafc', padding: '14px 18px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.85rem', color: '#334155', lineHeight: '1.5' }}>
-          <b>🔬 Technical Structural Commentary:</b> Building 1 experienced intense resonant dynamic amplification, escalating to a peak shock of <b>{b1.maxPga}g</b> and transmitting severe inertial shear directly into the superstructure. In contrast, Building 2's base-isolation layer shifted the fundamental vibration period, dissipating <b>{dampingEfficiency.shockReductionPct}%</b> of incoming shock waves and reducing peak acceleration to <b>{b2.maxPga}g</b>.
+        <div style={{ marginTop: '16px', background: '#f8fafc', padding: '14px 18px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.825rem', color: '#334155', lineHeight: '1.5' }}>
+          <span style={{ fontWeight: 600, color: '#0f172a' }}>Technical Structural Commentary:</span> Building 1 experienced intense resonant dynamic amplification, escalating to a peak shock of <b>{b1.maxPga}g</b> and transmitting severe inertial shear directly into the superstructure. In contrast, Building 2's base-isolation layer shifted the fundamental vibration period, dissipating <b>{dampingEfficiency.shockReductionPct}%</b> of incoming shock waves and reducing peak acceleration to <b>{b2.maxPga}g</b>.
         </div>
       </div>
 
       {/* ── P-Delta Tilt Drift Graph ─────────────────────────────────── */}
-      <div style={{ background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-        <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', color: '#0f172a' }}>
-          📐 Figure 2: Structural P-Delta Drift & Tilt Response
+      <div style={{ background: '#fff', padding: '20px 24px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+        <h3 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>
+          Figure 2 — Structural P-Delta Drift & Tilt Response
         </h3>
-        <p style={{ margin: '0 0 16px 0', color: '#64748b', fontSize: '0.85rem' }}>
+        <p style={{ margin: '0 0 16px 0', color: '#64748b', fontSize: '0.825rem' }}>
           Lateral angular sway and residual permanent drift comparison after earthquake settles.
         </p>
         <div style={{ height: '280px' }}>
@@ -1003,8 +1004,8 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
         </div>
 
         {/* Technical commentary below chart */}
-        <div style={{ marginTop: '16px', background: '#f8fafc', padding: '14px 18px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.85rem', color: '#334155', lineHeight: '1.5' }}>
-          <b>🔬 Technical Structural Commentary:</b> Building 1 reached a peak sway of <b>{b1.maxTilt}°</b> and settled with a permanent residual tilt of <b>{b1.residualTilt}°</b>, indicating structural yielding and high susceptibility to secondary P-Delta overturning collapse. Building 2 absorbed displacements elastically at the base isolator, achieving elastic recentering with minimal residual offset (<b>{b2.residualTilt}°</b>).
+        <div style={{ marginTop: '16px', background: '#f8fafc', padding: '14px 18px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.825rem', color: '#334155', lineHeight: '1.5' }}>
+          <span style={{ fontWeight: 600, color: '#0f172a' }}>Technical Structural Commentary:</span> Building 1 reached a peak sway of <b>{b1.maxTilt}°</b> and settled with a permanent residual tilt of <b>{b1.residualTilt}°</b>, indicating structural yielding and high susceptibility to secondary P-Delta overturning collapse. Building 2 absorbed displacements elastically at the base isolator, achieving elastic recentering with minimal residual offset (<b>{b2.residualTilt}°</b>).
         </div>
       </div>
     </div>

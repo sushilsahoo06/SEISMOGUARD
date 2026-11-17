@@ -158,16 +158,16 @@ export default function App() {
         {/* ── Header ─────────────────────────────────────────────────── */}
         <header className="dashboard-header">
           <div className="header-top-row">
-            <h1>SHM — Structural Health Monitor (ADXL345 + SW-420)</h1>
-            <button onClick={handleExportCSV} className="btn-export">⬇ Export CSV</button>
+            <h1>SEISMOGUARD – Integrated Seismic Isolation, Structural Health Monitoring & Emergency Alert System</h1>
+            <button onClick={handleExportCSV} className="btn-export">Export CSV</button>
           </div>
 
           <nav className="nav-bar">
             <NavLink to="/frequency" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Accelerometer</NavLink>
             <NavLink to="/vibration" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Vibration</NavLink>
             <NavLink to="/orientation" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Orientation</NavLink>
-            <NavLink to="/post-analysis" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'} style={{ background: '#eff6ff', color: '#2563eb', fontWeight: 600 }}>Post-Event Report</NavLink>
-            <NavLink to="/occupants" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'} style={{ background: '#fef2f2', color: '#b91c1c', fontWeight: 700, borderColor: '#fca5a5' }}>Evacuation & Alerts</NavLink>
+            <NavLink to="/post-analysis" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Post-Event Report</NavLink>
+            <NavLink to="/occupants" className={({ isActive }) => isActive ? 'nav-tab active' : 'nav-tab'}>Evacuation & Alerts</NavLink>
           </nav>
         </header>
 

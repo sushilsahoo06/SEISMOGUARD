@@ -401,6 +401,32 @@ exports.getPostEventAnalysis = async (req, res) => {
     const eventFeatures = extractor.extractFeatures(eventSlice);
     const eventMl = eventFeatures ? classifier.classify(eventFeatures) : null;
 
+    // Compute Average Dynamic Peak Acceleration (Mean of peak shock excursions during shaking)
+    const targetSlice = eventSlice && eventSlice.length > 0 ? eventSlice : rows;
+    const peaks1 = [];
+    const peaks2 = [];
+    for (let i = 1; i < targetSlice.length - 1; i++) {
+      const p1 = parseFloat(targetSlice[i - 1].magnitude_1 ?? targetSlice[i - 1].magnitude ?? 1.0);
+      const c1 = parseFloat(targetSlice[i].magnitude_1 ?? targetSlice[i].magnitude ?? 1.0);
+      const n1 = parseFloat(targetSlice[i + 1].magnitude_1 ?? targetSlice[i + 1].magnitude ?? 1.0);
+      if (c1 >= p1 && c1 >= n1 && c1 > 1.02) peaks1.push(c1);
+
+      const p2 = parseFloat(targetSlice[i - 1].magnitude_2 ?? 1.0);
+      const c2 = parseFloat(targetSlice[i].magnitude_2 ?? 1.0);
+      const n2 = parseFloat(targetSlice[i + 1].magnitude_2 ?? 1.0);
+      if (c2 >= p2 && c2 >= n2 && c2 > 1.01) peaks2.push(c2);
+    }
+
+    const avgPga1 = peaks1.length > 0
+      ? peaks1.reduce((sum, v) => sum + v, 0) / peaks1.length
+      : (targetSlice.reduce((sum, r) => sum + parseFloat(r.magnitude_1 ?? r.magnitude ?? 1.0), 0) / (targetSlice.length || 1));
+
+    const avgPga2 = peaks2.length > 0
+      ? peaks2.reduce((sum, v) => sum + v, 0) / peaks2.length
+      : (targetSlice.reduce((sum, r) => sum + parseFloat(r.magnitude_2 ?? 1.0), 0) / (targetSlice.length || 1));
+
+    const avgShockReductionPct = avgPga1 > 0 ? Math.max(0, parseFloat(((1 - (avgPga2 / avgPga1)) * 100).toFixed(1))) : 0;
+
     res.json({
       hasData: true,
       totalSamples: rows.length,
@@ -409,6 +435,7 @@ exports.getPostEventAnalysis = async (req, res) => {
       dampingEfficiency: {
         shockReductionPct,
         energyDissipatedPct,
+        avgShockReductionPct,
       },
       mlAssessment: eventMl ? {
         eventType: eventMl.eventType,
@@ -423,6 +450,7 @@ exports.getPostEventAnalysis = async (req, res) => {
       } : null,
       b1: {
         maxPga: parseFloat(maxPga1.toFixed(3)),
+        avgPga: parseFloat(avgPga1.toFixed(3)),
         maxAccelX: parseFloat(maxAccelX1.toFixed(3)),
         maxTilt: parseFloat(maxTilt1.toFixed(2)),
         residualTilt: parseFloat(residualTilt1.toFixed(2)),
@@ -433,6 +461,7 @@ exports.getPostEventAnalysis = async (req, res) => {
       },
       b2: {
         maxPga: parseFloat(maxPga2.toFixed(3)),
+        avgPga: parseFloat(avgPga2.toFixed(3)),
         maxAccelX: parseFloat(maxAccelX2.toFixed(3)),
         maxTilt: parseFloat(maxTilt2.toFixed(2)),
         residualTilt: parseFloat(residualTilt2.toFixed(2)),

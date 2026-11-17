@@ -179,6 +179,12 @@ export default function PostAnalysisPage() {
     }
 
     const { b1, b2, dampingEfficiency, totalSamples, eventWindow, mlAssessment } = data;
+    const timeline = data.timeline || [];
+    const b1AvgPeak = b1.avgPga !== undefined ? b1.avgPga : (timeline.length > 0 ? (timeline.reduce((s, p) => s + (p.mag1 || 1), 0) / timeline.length).toFixed(3) : b1.maxPga);
+    const b2AvgPeak = b2.avgPga !== undefined ? b2.avgPga : (timeline.length > 0 ? (timeline.reduce((s, p) => s + (p.mag2 || 1), 0) / timeline.length).toFixed(3) : b2.maxPga);
+    const avgPeakReductionPct = dampingEfficiency.avgShockReductionPct !== undefined ? dampingEfficiency.avgShockReductionPct : (
+      parseFloat(b1AvgPeak) > 0 ? Math.max(0, ((1 - parseFloat(b2AvgPeak) / parseFloat(b1AvgPeak)) * 100)).toFixed(1) : '0.0'
+    );
     const dateStr = new Date().toLocaleString();
     const durationStr = eventWindow && eventWindow.hasEvent ? `${eventWindow.eventDurationSec}s` : 'Continuous';
 
@@ -250,7 +256,7 @@ export default function PostAnalysisPage() {
     doc.text(`${b1.maxPga} g`, margin + 3, y + 13);
     doc.setFontSize(6.8);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Lateral (X): ${b1.maxAccelX}g · CRITICAL`, margin + 3, y + 18);
+    doc.text(`Lateral: ${b1.maxAccelX}g · Avg Peak: ${b1AvgPeak}g`, margin + 3, y + 18);
 
     // Card 2: B2 PGA
     const c2X = margin + cardW + 3;
@@ -265,7 +271,7 @@ export default function PostAnalysisPage() {
     doc.text(`${b2.maxPga} g`, c2X + 3, y + 13);
     doc.setFontSize(6.8);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Lateral (X): ${b2.maxAccelX}g · DAMPED`, c2X + 3, y + 18);
+    doc.text(`Lateral: ${b2.maxAccelX}g · Avg Peak: ${b2AvgPeak}g`, c2X + 3, y + 18);
 
     // Card 3: Isolation Shock Reduction
     const c3X = c2X + cardW + 3;
@@ -341,8 +347,8 @@ export default function PostAnalysisPage() {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(51, 65, 85);
     const fig1Commentary = [
-      `1. Unprotected Fixed-Base Behavior (Building 1, Red Waveform): The conventional structure functioned as a rigid oscillator with high fundamental natural frequency. Upon excitation, structural resonance amplified ground motion up to a destructive Peak Ground Acceleration (PGA) of ${b1.maxPga}g, with peak lateral acceleration reaching ${b1.maxAccelX}g. High-frequency shear waves transmitted directly up the vertical structural frame without mitigation, inducing violent cyclic stress reversals.`,
-      `2. Base-Isolated Attenuation Mechanics (Building 2, Green Waveform): The flexible base-isolation interface decoupled the superstructure from rapid horizontal foundation movements. By shifting the structural period beyond the dominant ground frequency, Building 2 successfully attenuated peak acceleration by ${dampingEfficiency.shockReductionPct}% (capping peak shock at ${b2.maxPga}g) and dissipated ${dampingEfficiency.energyDissipatedPct}% of cumulative seismic kinetic energy.`,
+      `1. Unprotected Fixed-Base Behavior (Building 1, Red Waveform): The conventional structure functioned as a rigid oscillator with high fundamental natural frequency. Upon excitation, structural resonance amplified ground motion up to a destructive Peak Ground Acceleration (PGA) of ${b1.maxPga}g (Average Peak: ${b1AvgPeak}g), with peak lateral acceleration reaching ${b1.maxAccelX}g. High-frequency shear waves transmitted directly up the vertical structural frame without mitigation, inducing violent cyclic stress reversals.`,
+      `2. Base-Isolated Attenuation Mechanics (Building 2, Green Waveform): The flexible base-isolation interface decoupled the superstructure from rapid horizontal foundation movements. By shifting the structural period beyond the dominant ground frequency, Building 2 successfully attenuated peak acceleration by ${dampingEfficiency.shockReductionPct}% (capping peak shock at ${b2.maxPga}g, Average Peak: ${b2AvgPeak}g) and dissipated ${dampingEfficiency.energyDissipatedPct}% of cumulative seismic kinetic energy.`,
       `3. Vibration Pulses & Inertial Demand: SW-420 sensors recorded ${b1.totalVibCount} high-amplitude shock pulses in Building 1 versus ${b2.totalVibCount} damped pulses in Building 2, validating a substantial reduction in inertial shear demand throughout the building envelope.`,
     ];
     let subY = y + 12;
@@ -431,6 +437,7 @@ export default function PostAnalysisPage() {
     // Table Rows
     const rowsData = [
       ['Peak Acceleration (PGA)', `${b1.maxPga} g`, `${b2.maxPga} g`, `-${dampingEfficiency.shockReductionPct}%`, b2.maxPga < 1.8 ? 'PASS (Isolated)' : 'WARNING'],
+      ['Average Peak Acceleration', `${b1AvgPeak} g`, `${b2AvgPeak} g`, `-${avgPeakReductionPct}%`, 'Mean Wave Attenuation'],
       ['Peak Lateral Force (X-axis)', `${b1.maxAccelX} g`, `${b2.maxAccelX} g`, `${((1 - b2.maxAccelX / (b1.maxAccelX || 1)) * 100).toFixed(0)}%`, 'Shear Reduction'],
       ['Peak Dynamic Angular Sway', `${b1.maxTilt}°`, `${b2.maxTilt}°`, `${(b1.maxTilt - b2.maxTilt).toFixed(1)}°`, b1.maxTilt > 15 ? 'Critical Sway' : 'Acceptable'],
       ['Permanent Residual Drift', `${b1.residualTilt}°`, `${b2.residualTilt}°`, `-${(b1.residualTilt - b2.residualTilt).toFixed(1)}°`, b1.residualTilt > 10 ? 'PLASTIC YIELD' : 'ELASTIC SAFE'],
@@ -598,6 +605,29 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
   }
 
   const { dampingEfficiency, b1, b2, timeline, fullTimeline, totalSamples, eventWindow, mlAssessment } = data;
+
+  // Calculate Average Peak Acceleration for B1 and B2 (with timeline fallback)
+  const calcAvgPeak = (key, fallbackMax) => {
+    if (!timeline || timeline.length === 0) return fallbackMax || '1.000';
+    const peaks = [];
+    for (let i = 1; i < timeline.length - 1; i++) {
+      const prev = timeline[i - 1][key] || 1;
+      const curr = timeline[i][key] || 1;
+      const next = timeline[i + 1][key] || 1;
+      if (curr >= prev && curr >= next && curr > 1.01) peaks.push(curr);
+    }
+    if (peaks.length > 0) {
+      return (peaks.reduce((a, b) => a + b, 0) / peaks.length).toFixed(3);
+    }
+    const mean = timeline.reduce((s, p) => s + (p[key] || 1), 0) / timeline.length;
+    return mean.toFixed(3);
+  };
+
+  const b1AvgPeak = b1.avgPga !== undefined ? b1.avgPga : calcAvgPeak('mag1', b1.maxPga);
+  const b2AvgPeak = b2.avgPga !== undefined ? b2.avgPga : calcAvgPeak('mag2', b2.maxPga);
+  const avgPeakReductionPct = dampingEfficiency.avgShockReductionPct !== undefined ? dampingEfficiency.avgShockReductionPct : (
+    parseFloat(b1AvgPeak) > 0 ? Math.max(0, ((1 - parseFloat(b2AvgPeak) / parseFloat(b1AvgPeak)) * 100)).toFixed(1) : '0.0'
+  );
 
   // Select timeline based on zoom toggle: 'event' (zoomed to earthquake) or 'full' (all data)
   const activeTimeline = (timelineMode === 'full' && fullTimeline && fullTimeline.length > 0)
@@ -827,14 +857,17 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
       )}
 
       {/* ── Metric Scorecards ───────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px' }}>
         {/* Peak PGA B1 */}
         <div style={{ background: '#fff', padding: '18px 20px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
           <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em' }}>BUILDING 1 PEAK SHOCK (PGA)</div>
           <div style={{ fontSize: '1.65rem', fontWeight: 700, color: '#dc2626', margin: '6px 0 2px', fontFamily: 'monospace' }}>
             {b1.maxPga} g
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Max Lateral Acceleration: {b1.maxAccelX}g</div>
+          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Max Lateral: {b1.maxAccelX}g</div>
+          <div style={{ fontSize: '0.78rem', color: '#991b1b', marginTop: '4px', fontWeight: 600 }}>
+            Avg Peak: {b1AvgPeak} g
+          </div>
         </div>
 
         {/* Peak PGA B2 */}
@@ -843,7 +876,21 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
           <div style={{ fontSize: '1.65rem', fontWeight: 700, color: '#16a34a', margin: '6px 0 2px', fontFamily: 'monospace' }}>
             {b2.maxPga} g
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Max Lateral Acceleration: {b2.maxAccelX}g</div>
+          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>Max Lateral: {b2.maxAccelX}g</div>
+          <div style={{ fontSize: '0.78rem', color: '#15803d', marginTop: '4px', fontWeight: 600 }}>
+            Avg Peak: {b2AvgPeak} g
+          </div>
+        </div>
+
+        {/* Average Peak Acceleration B1 vs B2 */}
+        <div style={{ background: '#fff', padding: '18px 20px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+          <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em' }}>AVERAGE PEAK ACCELERATION</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a', margin: '6px 0 2px', fontFamily: 'monospace' }}>
+            <span style={{ color: '#dc2626' }}>{b1AvgPeak}g</span> <span style={{ fontSize: '0.95rem', color: '#64748b', fontWeight: 500 }}>vs</span> <span style={{ color: '#16a34a' }}>{b2AvgPeak}g</span>
+          </div>
+          <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+            Mean Wave Peak · {avgPeakReductionPct}% Reduction
+          </div>
         </div>
 
         {/* Damping Efficiency */}
@@ -936,7 +983,7 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
 
         {/* Technical commentary below chart */}
         <div style={{ marginTop: '16px', background: '#f8fafc', padding: '14px 18px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.825rem', color: '#334155', lineHeight: '1.5' }}>
-          <span style={{ fontWeight: 600, color: '#0f172a' }}>Technical Structural Commentary:</span> Building 1 experienced intense resonant dynamic amplification, escalating to a peak shock of <b>{b1.maxPga}g</b> and transmitting severe inertial shear directly into the superstructure. In contrast, Building 2's base-isolation layer shifted the fundamental vibration period, dissipating <b>{dampingEfficiency.shockReductionPct}%</b> of incoming shock waves and reducing peak acceleration to <b>{b2.maxPga}g</b>.
+          <span style={{ fontWeight: 600, color: '#0f172a' }}>Technical Structural Commentary:</span> Building 1 experienced intense resonant dynamic amplification, escalating to a peak shock of <b>{b1.maxPga}g</b> (Avg Peak: <b>{b1AvgPeak}g</b>) and transmitting severe inertial shear directly into the superstructure. In contrast, Building 2's base-isolation layer shifted the fundamental vibration period, dissipating <b>{dampingEfficiency.shockReductionPct}%</b> of incoming shock waves and reducing peak acceleration to <b>{b2.maxPga}g</b> (Avg Peak: <b>{b2AvgPeak}g</b>).
         </div>
       </div>
 

@@ -78,7 +78,6 @@ export default function PostAnalysisPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiReport, setAiReport] = useState(null);
   const [apiKey, setApiKey] = useState('');
-  const [showKeyModal, setShowKeyModal] = useState(false);
 
   // Chart canvas refs to capture graphs as base64 images
   const accelChartRef = useRef(null);
@@ -141,7 +140,6 @@ export default function PostAnalysisPage() {
       if (json.aiReport) {
         const cleaned = cleanReportText(json.aiReport);
         setAiReport(cleaned);
-        setShowKeyModal(false);
         return cleaned;
       } else {
         alert(json.error || 'Failed to generate AI report');
@@ -679,10 +677,6 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
             {autoRefresh ? 'Auto-Sync Active (3s)' : 'Auto-Sync Paused'}
           </span>
 
-          <button onClick={() => setShowKeyModal(true)} className="btn-export" style={{ background: '#f8fafc', color: '#0f172a', border: '1px solid #cbd5e1' }}>
-            {aiLoading ? 'Analyzing...' : aiReport ? 'AI Report Ready' : 'Generate AI Report'}
-          </button>
-
           <button onClick={handleDownloadDirectPDF} className="btn-export" style={{ background: '#0f172a', color: '#fff', border: '1px solid #0f172a' }}>
             Download Publication PDF
           </button>
@@ -732,38 +726,6 @@ Based on ${totalSamples} sensor telemetry readings captured at 20 Hz, the struct
               }}
             >
               Full Session (All Data)
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Gemini API Key & Generator Modal ───────────────────────── */}
-      {showKeyModal && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '20px', borderRadius: '10px' }}>
-          <h3 style={{ margin: '0 0 6px 0', color: '#0f172a', fontSize: '1rem', fontWeight: 600 }}>
-            Gemini AI Structural Forensic Diagnosis
-          </h3>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0 0 12px 0' }}>
-            Gemini analyzes dual-building acceleration, drift, and damping efficiency to generate an executive engineering evaluation.
-          </p>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <input
-              type="password"
-              placeholder="Paste your Gemini API Key (Optional: leave empty to use server .env or benchmark)"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              style={{ flex: 1, padding: '10px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
-            />
-            <button
-              onClick={handleGenerateAIReport}
-              disabled={aiLoading}
-              className="btn-export"
-              style={{ background: '#0f172a', color: '#fff', border: '1px solid #0f172a', padding: '10px 18px' }}
-            >
-              {aiLoading ? 'Analyzing...' : 'Run Forensic Evaluation'}
-            </button>
-            <button onClick={() => setShowKeyModal(false)} className="btn-export" style={{ background: '#fff', color: '#64748b', border: '1px solid #e2e8f0' }}>
-              Cancel
             </button>
           </div>
         </div>

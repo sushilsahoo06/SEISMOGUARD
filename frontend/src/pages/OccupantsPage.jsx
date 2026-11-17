@@ -41,13 +41,6 @@ export default function OccupantsPage() {
   const [autonomousNotice, setAutonomousNotice] = useState(null);
   const [liveVibrating, setLiveVibrating] = useState(false);
 
-  // Quick Test Modal / Controls
-  const [testPhone, setTestPhone] = useState('+91');
-  const [testingCall, setTestingCall] = useState(false);
-  const [testingSMS, setTestingSMS] = useState(false);
-  const [testingWA, setTestingWA] = useState(false);
-  const [testFeedback, setTestFeedback] = useState(null);
-
   // File Upload State
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadFeedback, setUploadFeedback] = useState(null);
@@ -326,98 +319,7 @@ export default function OccupantsPage() {
     }
   };
 
-  // Test Tool Call
-  const runTestCall = async () => {
-    if (!testPhone || testPhone.length < 8) {
-      alert('Enter a valid phone number with country code (e.g. +919876543210)');
-      return;
-    }
-    setTestingCall(true);
-    setTestFeedback(null);
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/alerts/test-call`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: testPhone, name: 'System Verification' }),
-      });
-      const data = await res.json();
-      setTestFeedback({
-        type: res.ok ? 'success' : 'error',
-        text: res.ok
-          ? `Voice Call Dispatched! Twilio SID: ${data.result?.sid}. Receiver will hear the automated evacuation alert and the call will automatically hang up.`
-          : `Call Notice: ${data.error}`,
-      });
-      loadAlertLogs();
-    } catch (err) {
-      setTestFeedback({ type: 'error', text: err.message });
-    } finally {
-      setTestingCall(false);
-    }
-  };
 
-  // Test Tool SMS
-  const runTestSMS = async () => {
-    if (!testPhone || testPhone.length < 8) {
-      alert('Enter a valid phone number with country code (e.g. +919876543210)');
-      return;
-    }
-    setTestingSMS(true);
-    setTestFeedback(null);
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/alerts/test-sms`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: testPhone,
-          message: 'SHM TEST ALERT: Structural Health Monitoring emergency notification verified on your device!',
-        }),
-      });
-      const data = await res.json();
-      setTestFeedback({
-        type: res.ok ? 'success' : 'error',
-        text: res.ok
-          ? `Test SMS Dispatched! Twilio SID: ${data.sid}.`
-          : `SMS Notice: ${data.error}`,
-      });
-      loadAlertLogs();
-    } catch (err) {
-      setTestFeedback({ type: 'error', text: err.message });
-    } finally {
-      setTestingSMS(false);
-    }
-  };
-
-  // Test Tool WhatsApp
-  const runTestWA = async () => {
-    if (!testPhone || testPhone.length < 8) {
-      alert('Enter a valid phone number with country code (e.g. +919876543210)');
-      return;
-    }
-    setTestingWA(true);
-    setTestFeedback(null);
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/alerts/test-whatsapp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: testPhone,
-          message: 'SHM TEST: WhatsApp Earthquake Alert System active & ready.',
-        }),
-      });
-      const data = await res.json();
-      setTestFeedback({
-        type: res.ok ? 'success' : 'error',
-        text: res.ok
-          ? `WhatsApp Message Dispatched! SID: ${data.sid}`
-          : `WhatsApp Notice: ${data.error}`,
-      });
-      loadAlertLogs();
-    } catch (err) {
-      setTestFeedback({ type: 'error', text: err.message });
-    } finally {
-      setTestingWA(false);
-    }
-  };
 
   // Handle Excel File Upload
   const handleFileUpload = async (e) => {
@@ -549,39 +451,6 @@ export default function OccupantsPage() {
           <div className="metric-val">{stats.b2Count}</div>
           <div className="metric-sub">Base-Isolated Structure</div>
         </div>
-      </div>
-
-      {/* ── Twilio Direct Test & System Verification Bar ───────────── */}
-      <div className="test-bar-card">
-        <div className="test-bar-header">
-          <div>
-            <strong>Twilio Telecom Live Verification</strong>
-            <span className="test-sub"> — Test Automated Voice Call (auto-cuts on pickup), SMS, or WhatsApp on a single number:</span>
-          </div>
-        </div>
-        <div className="test-bar-controls">
-          <input
-            type="text"
-            className="input-test-phone"
-            placeholder="+919876543210"
-            value={testPhone}
-            onChange={(e) => setTestPhone(e.target.value)}
-          />
-          <button className="btn-test-action btn-call" onClick={runTestCall} disabled={testingCall}>
-            {testingCall ? 'Dialing...' : 'Test Voice Call'}
-          </button>
-          <button className="btn-test-action btn-sms" onClick={runTestSMS} disabled={testingSMS}>
-            {testingSMS ? 'Sending...' : 'Test SMS'}
-          </button>
-          <button className="btn-test-action btn-wa" onClick={runTestWA} disabled={testingWA}>
-            {testingWA ? 'Sending...' : 'Test WhatsApp'}
-          </button>
-        </div>
-        {testFeedback && (
-          <div className={`feedback-alert ${testFeedback.type === 'success' ? 'feedback-success' : 'feedback-error'}`}>
-            {testFeedback.text}
-          </div>
-        )}
       </div>
 
       {/* ── Main Toolbar: Search, Filters, Excel Import / Export ──── */}

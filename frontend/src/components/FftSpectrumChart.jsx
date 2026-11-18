@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -27,7 +27,80 @@ ChartJS.register(
 
 export default function FftSpectrumChart({ ml }) {
   const chartRef = useRef(null);
+  const modalChartRef = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const zoomLimitsRef = useRef({ xMin: null, xMax: null, yMin: null, yMax: null });
+
+  const recordZoom = (chart) => {
+    if (!chart || !chart.scales) return;
+    const x = chart.scales.x;
+    const y = chart.scales.y;
+    if (x && typeof x.min === 'number' && typeof x.max === 'number') {
+      zoomLimitsRef.current.xMin = x.min;
+      zoomLimitsRef.current.xMax = x.max;
+    }
+    if (y && typeof y.min === 'number' && typeof y.max === 'number') {
+      zoomLimitsRef.current.yMin = y.min;
+      zoomLimitsRef.current.yMax = y.max;
+    }
+    setIsZoomed(true);
+  };
+
+  const handleResetZoom = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    zoomLimitsRef.current = { xMin: null, xMax: null, yMin: null, yMax: null };
+    setIsZoomed(false);
+    [chartRef.current, modalChartRef.current].forEach((ch) => {
+      if (ch) {
+        if (ch.scales.x) {
+          delete ch.scales.x.options.min;
+          delete ch.scales.x.options.max;
+        }
+        if (ch.scales.y) {
+          delete ch.scales.y.options.min;
+          delete ch.scales.y.options.max;
+        }
+        ch.resetZoom();
+        ch.update();
+      }
+    });
+  };
+
+  const handleZoomIn = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const target = isModalOpen ? modalChartRef.current : chartRef.current;
+    if (target) {
+      target.zoom(1.25);
+      recordZoom(target);
+    }
+  };
+
+  const handleZoomOut = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const target = isModalOpen ? modalChartRef.current : chartRef.current;
+    if (target) {
+      target.zoom(0.8);
+      recordZoom(target);
+    }
+  };
+
+  // Enforces that user zoom scale boundaries stick during incoming real-time telemetry updates
+  const keepZoomPlugin = useMemo(() => ({
+    id: 'keepFftZoomPlugin',
+    beforeUpdate(chart) {
+      if (zoomLimitsRef.current && zoomLimitsRef.current.xMin !== null) {
+        if (chart.scales.x) {
+          chart.scales.x.options.min = zoomLimitsRef.current.xMin;
+          chart.scales.x.options.max = zoomLimitsRef.current.xMax;
+        }
+        if (chart.scales.y && zoomLimitsRef.current.yMin !== null) {
+          chart.scales.y.options.min = zoomLimitsRef.current.yMin;
+          chart.scales.y.options.max = zoomLimitsRef.current.yMax;
+        }
+      }
+    },
+  }), []);
 
   const spectrum = ml?.spectrum;
   const rawFreqs = spectrum?.frequencies || [
@@ -92,8 +165,19 @@ export default function FftSpectrumChart({ ml }) {
         },
       },
       zoom: {
-        pan: { enabled: true, mode: 'x' },
-        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' },
+        pan: {
+          enabled: true,
+          mode: 'x',
+          onPan: ({ chart }) => recordZoom(chart),
+          onPanComplete: ({ chart }) => recordZoom(chart),
+        },
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: 'x',
+          onZoom: ({ chart }) => recordZoom(chart),
+          onZoomComplete: ({ chart }) => recordZoom(chart),
+        },
       },
     },
     scales: {
@@ -104,6 +188,10 @@ export default function FftSpectrumChart({ ml }) {
           font: { weight: 'bold' },
         },
         grid: { color: 'rgba(0, 0, 0, 0.05)' },
+        ...(isZoomed && zoomLimitsRef.current.xMin !== null ? {
+          min: zoomLimitsRef.current.xMin,
+          max: zoomLimitsRef.current.xMax,
+        } : {}),
       },
       y: {
         title: {
@@ -117,13 +205,12 @@ export default function FftSpectrumChart({ ml }) {
         ticks: {
           callback: (val) => (val < 0.001 ? Number(val).toExponential(1) : Number(val).toFixed(4)),
         },
+        ...(isZoomed && zoomLimitsRef.current.yMin !== null ? {
+          min: zoomLimitsRef.current.yMin,
+          max: zoomLimitsRef.current.yMax,
+        } : {}),
       },
     },
-  };
-
-  const handleResetZoom = (e) => {
-    e.stopPropagation();
-    if (chartRef.current) chartRef.current.resetZoom();
   };
 
   return (
@@ -138,24 +225,42 @@ export default function FftSpectrumChart({ ml }) {
         <div className="fft-actions">
           <span className="fft-badge-b1">B1 Resonant Peak: {domFreq1 > 0 ? `${domFreq1} Hz` : '0 Hz (Idle)'}</span>
           <span className="fft-badge-b2">B2 Damped: {domFreq2 > 0 ? `${domFreq2} Hz` : '0 Hz (Idle)'}</span>
-          <button onClick={handleResetZoom} className="btn-chart-action">Reset Zoom</button>
+          {isZoomed && (
+            <span style={{ fontSize: '0.75rem', background: '#dbeafe', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '3px 8px', borderRadius: '4px', fontWeight: 600 }}>
+              Zoom Locked
+            </span>
+          )}
+          <button onClick={handleZoomIn} className="btn-chart-action">Zoom In (+)</button>
+          <button onClick={handleZoomOut} className="btn-chart-action">Zoom Out (-)</button>
+          <button
+            onClick={handleResetZoom}
+            className="btn-chart-action"
+            style={isZoomed ? { background: '#fef2f2', color: '#dc2626', borderColor: '#fca5a5' } : {}}
+          >
+            Reset Zoom
+          </button>
           <button onClick={() => setIsModalOpen(true)} className="btn-chart-action">Expand</button>
         </div>
       </div>
 
       <div className="fft-chart-wrapper" style={{ height: '260px' }}>
-        <Line ref={chartRef} data={data} options={options} />
+        <Line ref={chartRef} data={data} options={options} plugins={[keepZoomPlugin]} />
       </div>
 
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" style={{ width: '90%', height: '80vh' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ width: '90%', height: '80vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Live FFT Resonant Frequency Spectrum (Full Screen)</h3>
-              <button onClick={() => setIsModalOpen(false)} className="btn-close">✕</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button onClick={handleZoomIn} className="btn-chart-action">Zoom In (+)</button>
+                <button onClick={handleZoomOut} className="btn-chart-action">Zoom Out (-)</button>
+                <button onClick={handleResetZoom} className="btn-chart-action">Reset</button>
+                <button onClick={() => setIsModalOpen(false)} className="btn-close">✕</button>
+              </div>
             </div>
             <div style={{ flex: 1, minHeight: 0 }}>
-              <Line data={data} options={options} />
+              <Line ref={modalChartRef} data={data} options={options} plugins={[keepZoomPlugin]} />
             </div>
           </div>
         </div>
@@ -163,4 +268,3 @@ export default function FftSpectrumChart({ ml }) {
     </div>
   );
 }
-

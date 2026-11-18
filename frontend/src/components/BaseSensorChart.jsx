@@ -230,7 +230,7 @@ export default function BaseSensorChart({
 
   return (
     <>
-      <div className="card clickable-card" onClick={() => setIsModalOpen(true)}>
+      <div className="card">
         <div className="card-header">
           <h3>{title}</h3>
           <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -242,7 +242,7 @@ export default function BaseSensorChart({
             <button onClick={handleZoomIn} className="reset-btn" title="Zoom In">+</button>
             <button onClick={handleZoomOut} className="reset-btn" title="Zoom Out">-</button>
             <button onClick={resetZoom} className="reset-btn">Reset</button>
-            <span className="expand-badge">Expand</span>
+            <button type="button" onClick={() => setIsModalOpen(true)} className="expand-btn" style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "4px", padding: "3px 8px", fontSize: "0.75rem", fontWeight: 600, color: "#334155", cursor: "pointer" }}>Expand</button>
           </div>
         </div>
         <div className="chart-container" style={{ height: "320px" }}>

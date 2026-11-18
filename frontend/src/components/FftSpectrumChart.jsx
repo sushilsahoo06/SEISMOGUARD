@@ -167,14 +167,14 @@ export default function FftSpectrumChart({ ml }) {
       zoom: {
         pan: {
           enabled: true,
-          mode: 'x',
+          mode: 'xy',
           onPan: ({ chart }) => recordZoom(chart),
           onPanComplete: ({ chart }) => recordZoom(chart),
         },
         zoom: {
           wheel: { enabled: true },
           pinch: { enabled: true },
-          mode: 'x',
+          mode: 'xy',
           onZoom: ({ chart }) => recordZoom(chart),
           onZoomComplete: ({ chart }) => recordZoom(chart),
         },
@@ -199,8 +199,6 @@ export default function FftSpectrumChart({ ml }) {
           text: 'Power Spectral Density (g²/Hz)',
           font: { weight: 'bold' },
         },
-        beginAtZero: true,
-        suggestedMax,
         grid: { color: 'rgba(0, 0, 0, 0.05)' },
         ticks: {
           callback: (val) => (val < 0.001 ? Number(val).toExponential(1) : Number(val).toFixed(4)),
@@ -208,7 +206,10 @@ export default function FftSpectrumChart({ ml }) {
         ...(isZoomed && zoomLimitsRef.current.yMin !== null ? {
           min: zoomLimitsRef.current.yMin,
           max: zoomLimitsRef.current.yMax,
-        } : {}),
+        } : {
+          beginAtZero: true,
+          suggestedMax,
+        }),
       },
     },
   };

@@ -24,10 +24,13 @@ let lastDbWriteMs = 0;
 // Helper: compute derived orientation values from accel axes
 function deriveOrientation(ax, ay, az) {
   const magnitude = parseFloat(Math.sqrt(ax * ax + ay * ay + az * az).toFixed(4));
-  const roll      = parseFloat((Math.atan2(ay, az) * (180 / Math.PI)).toFixed(3));
-  const pitch     = parseFloat((Math.atan2(-ax, Math.sqrt(ay * ay + az * az)) * (180 / Math.PI)).toFixed(3));
+  // Symmetric 3D tilt formula with positive Euclidean denominator:
+  // Completely prevents the ±180° branch-cut flip and vertical spike lines when Z is negative or crossing 0!
+  const roll  = parseFloat((Math.atan2(ay, Math.sqrt(ax * ax + az * az)) * (180 / Math.PI)).toFixed(3));
+  const pitch = parseFloat((Math.atan2(-ax, Math.sqrt(ay * ay + az * az)) * (180 / Math.PI)).toFixed(3));
   return { magnitude, roll, pitch };
 }
+
 
 // Ingest sensor readings from ESP32
 exports.receiveData = async (req, res, next) => {

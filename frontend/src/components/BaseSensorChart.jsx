@@ -170,7 +170,17 @@ export default function BaseSensorChart({
     animation: false,
     customChartType: chartType,
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: datasets && datasets.length > 1,
+        position: "top",
+        labels: {
+          boxWidth: 12,
+          boxHeight: 12,
+          font: { size: 11, weight: "bold" },
+          padding: 8,
+          usePointStyle: true,
+        },
+      },
       title:  { display: false },
       zoom: {
         pan: {

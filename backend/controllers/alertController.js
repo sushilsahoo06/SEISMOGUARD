@@ -6,9 +6,10 @@ const occupantController = require('./occupantController');
 let autoDispatchConfig = {
   enabled: true, // Armed by default so physical vibration triggers phone calls immediately
   lastTriggeredAt: null,
-  cooldownMs: 15 * 1000, // 15 seconds cooldown for responsive live testing
+  cooldownMs: 60 * 1000, // 60 seconds cooldown to prevent duplicate calling while table is being handled
   targetBuilding: 'All',
 };
+
 
 // In-Memory Alert Logs Cache for instantaneous UI rendering
 let inMemoryAlertLogs = [];

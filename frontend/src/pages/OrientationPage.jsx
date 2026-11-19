@@ -1,7 +1,24 @@
 import React from 'react';
 import BaseSensorChart from '../components/BaseSensorChart';
 
+// Sanitizes angles into [-90°, +90°] continuous range, eliminating any ±180° wrapping spikes
+const cleanAngle = (arr) => {
+  if (!Array.isArray(arr)) return [];
+  return arr.map((v) => {
+    let a = parseFloat(v);
+    if (isNaN(a)) return 0;
+    while (a > 90) a -= 180;
+    while (a < -90) a += 180;
+    return parseFloat(a.toFixed(2));
+  });
+};
+
 export default function OrientationPage({ labels, mag1, roll1, pitch1, mag2, roll2, pitch2 }) {
+  const cRoll1  = cleanAngle(roll1);
+  const cPitch1 = cleanAngle(pitch1);
+  const cRoll2  = cleanAngle(roll2);
+  const cPitch2 = cleanAngle(pitch2);
+
   return (
     <div>
       <div className="page-header">
@@ -31,8 +48,8 @@ export default function OrientationPage({ labels, mag1, roll1, pitch1, mag2, rol
           title="Roll Angle — B1 vs B2"
           labels={labels}
           datasets={[
-            { label: 'B1 Roll (°)', data: roll1, borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, tension: 0.4 },
-            { label: 'B2 Roll (°)', data: roll2, borderColor: '#8b5cf6', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+            { label: 'B1 Roll (°)', data: cRoll1, borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+            { label: 'B2 Roll (°)', data: cRoll2, borderColor: '#8b5cf6', borderWidth: 2, pointRadius: 0, tension: 0.4 },
           ]}
           chartType="gyro" yAxisLabel="Angle (°)" yMin={-90} yMax={90}
         />
@@ -42,8 +59,8 @@ export default function OrientationPage({ labels, mag1, roll1, pitch1, mag2, rol
           title="Pitch Angle — B1 vs B2"
           labels={labels}
           datasets={[
-            { label: 'B1 Pitch (°)', data: pitch1, borderColor: '#ec4899', borderWidth: 2, pointRadius: 0, tension: 0.4 },
-            { label: 'B2 Pitch (°)', data: pitch2, borderColor: '#0891b2', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+            { label: 'B1 Pitch (°)', data: cPitch1, borderColor: '#ec4899', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+            { label: 'B2 Pitch (°)', data: cPitch2, borderColor: '#0891b2', borderWidth: 2, pointRadius: 0, tension: 0.4 },
           ]}
           chartType="gyro" yAxisLabel="Angle (°)" yMin={-90} yMax={90}
         />
@@ -53,8 +70,8 @@ export default function OrientationPage({ labels, mag1, roll1, pitch1, mag2, rol
           title="Building 1 — Roll vs Pitch"
           labels={labels}
           datasets={[
-            { label: 'Roll (°)',  data: roll1,  borderColor: '#f59e0b', borderWidth: 1.8, pointRadius: 0, tension: 0.4 },
-            { label: 'Pitch (°)', data: pitch1, borderColor: '#ec4899', borderWidth: 1.8, pointRadius: 0, tension: 0.4 },
+            { label: 'Roll (°)',  data: cRoll1,  borderColor: '#f59e0b', borderWidth: 1.8, pointRadius: 0, tension: 0.4 },
+            { label: 'Pitch (°)', data: cPitch1, borderColor: '#ec4899', borderWidth: 1.8, pointRadius: 0, tension: 0.4 },
           ]}
           chartType="gyro" yAxisLabel="Angle (°)" yMin={-90} yMax={90}
         />
@@ -64,8 +81,8 @@ export default function OrientationPage({ labels, mag1, roll1, pitch1, mag2, rol
           title="Building 2 — Roll vs Pitch"
           labels={labels}
           datasets={[
-            { label: 'Roll (°)',  data: roll2,  borderColor: '#8b5cf6', borderWidth: 1.8, pointRadius: 0, tension: 0.4 },
-            { label: 'Pitch (°)', data: pitch2, borderColor: '#0891b2', borderWidth: 1.8, pointRadius: 0, tension: 0.4 },
+            { label: 'Roll (°)',  data: cRoll2,  borderColor: '#8b5cf6', borderWidth: 1.8, pointRadius: 0, tension: 0.4 },
+            { label: 'Pitch (°)', data: cPitch2, borderColor: '#0891b2', borderWidth: 1.8, pointRadius: 0, tension: 0.4 },
           ]}
           chartType="gyro" yAxisLabel="Angle (°)" yMin={-90} yMax={90}
         />
@@ -74,3 +91,4 @@ export default function OrientationPage({ labels, mag1, roll1, pitch1, mag2, rol
     </div>
   );
 }
+

@@ -1,11 +1,48 @@
 const db = require('../config/db');
 const xlsx = require('xlsx');
 
+// Resilient In-Memory Occupants Cache
+// Ensures the web dashboard and autonomous emergency voice dispatch NEVER wait on slow/offline cloud DB
+let occupantsCache = [
+  { id: 1, name: 'Sushil Sahoo', phone: '+918260507345', building_id: 'Building 1', room_number: 'Flat 402', floor: 4, status: 'Inside Building', relative_name: 'sushil', relative_phone: '+918260507345', relative_relation: 'Father' },
+  { id: 5, name: 'muktesh', phone: '+917077618445', building_id: 'Building 1', room_number: '56', floor: 1, status: 'Inside Building', relative_name: 'muktesh', relative_phone: '+917077618445', relative_relation: 'Family' },
+  { id: 8, name: 'mahaprasad', phone: '+919337597442', building_id: 'Building 1', room_number: '67', floor: 1, status: 'Inside Building', relative_name: 'mahaprasad', relative_phone: '+919337597442', relative_relation: 'Family' }
+];
+
+function computeStats(list) {
+  return {
+    total: list.length,
+    inside: list.filter(o => o.status === 'Inside Building').length,
+    evacuated: list.filter(o => o.status === 'Evacuated / Safe').length,
+    b1Count: list.filter(o => o.building_id === 'Building 1').length,
+    b2Count: list.filter(o => o.building_id === 'Building 2').length,
+  };
+}
+
+// Background Sync from PostgreSQL
+async function syncFromDb() {
+  try {
+    const res = await db.query('SELECT * FROM building_occupants ORDER BY id ASC');
+    if (res.rows && res.rows.length > 0) {
+      occupantsCache = res.rows;
+      console.log(`[Occupant Cache] Synchronized ${occupantsCache.length} occupants from PostgreSQL.`);
+    }
+  } catch (err) {
+    console.warn('[Occupant Cache] DB sync notice (using cached data):', err.message);
+  }
+}
+// Initial sync
+syncFromDb();
+
+// Export cache for direct access by emergency broadcast
+exports.getCachedOccupants = () => occupantsCache;
+
 // 1. Get all occupants with optional filtering & summary counts
 exports.getAllOccupants = async (req, res) => {
-  try {
-    const { building, status, search } = req.query;
+  const { building, status, search } = req.query;
 
+  // Try DB query with a quick timeout fallback
+  try {
     let query = 'SELECT * FROM building_occupants WHERE 1=1';
     const params = [];
 
@@ -26,23 +63,28 @@ exports.getAllOccupants = async (req, res) => {
 
     query += ' ORDER BY id ASC';
 
-    const result = await db.query(query, params);
+    // Race DB query with 2.5s fallback to prevent frontend hanging
+    const dbPromise = Promise.all([
+      db.query(query, params),
+      db.query(`
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN status = 'Inside Building' THEN 1 END) as inside,
+          COUNT(CASE WHEN status = 'Evacuated / Safe' THEN 1 END) as evacuated,
+          COUNT(CASE WHEN building_id = 'Building 1' THEN 1 END) as b1_count,
+          COUNT(CASE WHEN building_id = 'Building 2' THEN 1 END) as b2_count
+        FROM building_occupants
+      `)
+    ]);
+
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('DB query timeout')), 2500));
+    const [result, statsResult] = await Promise.race([dbPromise, timeoutPromise]);
+
     const occupants = result.rows;
-
-    // Compute live stats
-    const statsResult = await db.query(`
-      SELECT 
-        COUNT(*) as total,
-        COUNT(CASE WHEN status = 'Inside Building' THEN 1 END) as inside,
-        COUNT(CASE WHEN status = 'Evacuated / Safe' THEN 1 END) as evacuated,
-        COUNT(CASE WHEN building_id = 'Building 1' THEN 1 END) as b1_count,
-        COUNT(CASE WHEN building_id = 'Building 2' THEN 1 END) as b2_count
-      FROM building_occupants
-    `);
-
+    occupantsCache = occupants; // keep fresh
     const stats = statsResult.rows[0];
 
-    res.json({
+    return res.json({
       occupants,
       stats: {
         total: parseInt(stats.total || 0),
@@ -53,10 +95,33 @@ exports.getAllOccupants = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Error fetching occupants:', err);
-    res.status(500).json({ error: 'Failed to fetch building occupants' });
+    console.warn('[getAllOccupants] Using resilient in-memory cache:', err.message);
+    
+    // Filter from memory
+    let filtered = [...occupantsCache];
+    if (building && building !== 'All') {
+      filtered = filtered.filter(o => o.building_id === building);
+    }
+    if (status && status !== 'All') {
+      filtered = filtered.filter(o => o.status === status);
+    }
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      filtered = filtered.filter(o =>
+        (o.name && o.name.toLowerCase().includes(q)) ||
+        (o.room_number && o.room_number.toLowerCase().includes(q)) ||
+        (o.phone && o.phone.toLowerCase().includes(q)) ||
+        (o.relative_name && o.relative_name.toLowerCase().includes(q))
+      );
+    }
+
+    return res.json({
+      occupants: filtered,
+      stats: computeStats(occupantsCache),
+    });
   }
 };
+
 
 // 2. Create single occupant manually
 exports.createOccupant = async (req, res) => {
@@ -86,7 +151,9 @@ exports.createOccupant = async (req, res) => {
     const values = [name.trim(), phone.trim(), building_id, room_number.trim(), parseInt(floor) || 1, status, relative_name.trim(), relative_phone.trim(), relative_relation.trim()];
 
     const result = await db.query(query, values);
-    res.status(201).json({ status: 'success', occupant: result.rows[0] });
+    const newOcc = result.rows[0];
+    occupantsCache.push(newOcc);
+    res.status(201).json({ status: 'success', occupant: newOcc });
   } catch (err) {
     console.error('Error creating occupant:', err);
     res.status(500).json({ error: 'Failed to save occupant' });
@@ -142,7 +209,9 @@ exports.updateOccupant = async (req, res) => {
       return res.status(404).json({ error: 'Occupant not found' });
     }
 
-    res.json({ status: 'success', occupant: result.rows[0] });
+    const updated = result.rows[0];
+    occupantsCache = occupantsCache.map(o => o.id === parseInt(id) ? updated : o);
+    res.json({ status: 'success', occupant: updated });
   } catch (err) {
     console.error('Error updating occupant:', err);
     res.status(500).json({ error: 'Failed to update occupant' });
@@ -156,6 +225,9 @@ exports.updateStatus = async (req, res) => {
     const { status } = req.body;
 
     if (!status) return res.status(400).json({ error: 'Status is required' });
+
+    // Update in-memory cache immediately
+    occupantsCache = occupantsCache.map(o => o.id === parseInt(id) ? { ...o, status } : o);
 
     const result = await db.query(
       'UPDATE building_occupants SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
@@ -177,6 +249,8 @@ exports.updateStatus = async (req, res) => {
 exports.deleteOccupant = async (req, res) => {
   try {
     const { id } = req.params;
+    occupantsCache = occupantsCache.filter(o => o.id !== parseInt(id));
+
     const result = await db.query('DELETE FROM building_occupants WHERE id = $1 RETURNING id', [id]);
 
     if (result.rows.length === 0) {

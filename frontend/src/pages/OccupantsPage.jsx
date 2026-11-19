@@ -50,10 +50,24 @@ export default function OccupantsPage() {
   const [alertLogs, setAlertLogs] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
 
+  // Helper to format timestamps reliably in Indian Standard Time (IST)
+  const formatLogTime = (ts) => {
+    if (!ts) return '--';
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return String(ts);
+    return d.toLocaleTimeString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,
+    });
+  };
+
   // Load Occupants
-  const loadOccupants = async () => {
+  const loadOccupants = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent && occupants.length === 0) setLoading(true);
       const params = new URLSearchParams();
       if (filterBuilding !== 'All') params.append('building', filterBuilding);
       if (filterStatus !== 'All') params.append('status', filterStatus);
@@ -61,7 +75,9 @@ export default function OccupantsPage() {
 
       const res = await fetch(`${BACKEND_URL}/api/occupants?${params.toString()}`);
       const data = await res.json();
-      setOccupants(data.occupants || []);
+      if (data.occupants) {
+        setOccupants(data.occupants);
+      }
       if (data.stats) setStats(data.stats);
     } catch (err) {
       console.error('Failed to load occupants:', err);
@@ -123,7 +139,7 @@ export default function OccupantsPage() {
       setAutonomousNotice(
         `⚡ VIBRATION DETECTED! Emergency calls (auto-cut) & SMS automatically dispatched to both residents and family contacts!`
       );
-      loadOccupants();
+      loadOccupants(true);
       loadAlertLogs();
       loadAutoDispatchStatus();
       setTimeout(() => setAutonomousNotice(null), 12000);
@@ -673,7 +689,7 @@ export default function OccupantsPage() {
             ) : (
               alertLogs.slice(0, 15).map((log) => (
                 <tr key={log.id}>
-                  <td className="log-time">{new Date(log.timestamp).toLocaleTimeString()}</td>
+                  <td className="log-time">{formatLogTime(log.timestamp)}</td>
                   <td>
                     <strong>{log.recipient_name}</strong>
                     <div className="log-phone">{log.recipient_phone}</div>

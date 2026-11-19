@@ -19,6 +19,7 @@ function pushMemoryHistory(record) {
   }
 }
 let hasWarnedDbQuota = false;
+let lastDbWriteMs = 0;
 
 // Helper: compute derived orientation values from accel axes
 function deriveOrientation(ax, ay, az) {
@@ -107,35 +108,25 @@ exports.receiveData = async (req, res, next) => {
       mlPrediction.attenuation?.shockReductionPct || 0.0,
     ];
 
-    let savedRow = null;
-    try {
-      const result = await db.query(queryText, values);
-      savedRow = result.rows[0];
-    } catch (dbErr) {
-      if (!hasWarnedDbQuota) {
-        console.warn('⚠️ [Database Notice] Database quota reached or unavailable (' + dbErr.message + '). Seamlessly streaming via resilient in-memory mode!');
-        hasWarnedDbQuota = true;
-      }
-      savedRow = {
-        id: Date.now(),
-        timestamp: currentReading.timestamp,
-        accel_1, accel_2, vib_1, vib_2,
-        accel_x_1, accel_y_1, accel_z_1, gyro_x_1, gyro_y_1, gyro_z_1, temp_1,
-        magnitude_1: d1.magnitude, roll_1: d1.roll, pitch_1: d1.pitch,
-        accel_x_2, accel_y_2, accel_z_2, gyro_x_2, gyro_y_2, gyro_z_2, temp_2,
-        magnitude_2: d2.magnitude, roll_2: d2.roll, pitch_2: d2.pitch,
-        sw420_1: sw420_1 ? 1 : 0, sw420_2: sw420_2 ? 1 : 0,
-        vib_count_1: Math.max(0, parseInt(vib_count_1) || 0),
-        vib_count_2: Math.max(0, parseInt(vib_count_2) || 0),
-        ml_event_type: mlPrediction.eventType || 'NORMAL',
-        ml_confidence: mlPrediction.confidence || 0.0,
-        ml_hazard_level: mlPrediction.hazardLevel || 'SAFE',
-        ml_damage_index: mlPrediction.damageIndex || 0.0,
-        ml_pga_1: mlPrediction.building1?.pga || d1.magnitude,
-        ml_dominant_freq_1: mlPrediction.building1?.dominantFreq || 0.0,
-        ml_attenuation: mlPrediction.attenuation?.shockReductionPct || 0.0,
-      };
-    }
+    const savedRow = {
+      id: Date.now(),
+      timestamp: currentReading.timestamp,
+      accel_1, accel_2, vib_1, vib_2,
+      accel_x_1, accel_y_1, accel_z_1, gyro_x_1, gyro_y_1, gyro_z_1, temp_1,
+      magnitude_1: d1.magnitude, roll_1: d1.roll, pitch_1: d1.pitch,
+      accel_x_2, accel_y_2, accel_z_2, gyro_x_2, gyro_y_2, gyro_z_2, temp_2,
+      magnitude_2: d2.magnitude, roll_2: d2.roll, pitch_2: d2.pitch,
+      sw420_1: sw420_1 ? 1 : 0, sw420_2: sw420_2 ? 1 : 0,
+      vib_count_1: Math.max(0, parseInt(vib_count_1) || 0),
+      vib_count_2: Math.max(0, parseInt(vib_count_2) || 0),
+      ml_event_type: mlPrediction.eventType || 'NORMAL',
+      ml_confidence: mlPrediction.confidence || 0.0,
+      ml_hazard_level: mlPrediction.hazardLevel || 'SAFE',
+      ml_damage_index: mlPrediction.damageIndex || 0.0,
+      ml_pga_1: mlPrediction.building1?.pga || d1.magnitude,
+      ml_dominant_freq_1: mlPrediction.building1?.dominantFreq || 0.0,
+      ml_attenuation: mlPrediction.attenuation?.shockReductionPct || 0.0,
+    };
 
     pushMemoryHistory(savedRow);
 
@@ -146,6 +137,7 @@ exports.receiveData = async (req, res, next) => {
       ml: mlPrediction,
     };
 
+    // Fast HTTP response (0ms latency, zero timeout)
     res.status(201).json({
       status: 'success',
       ml: {
@@ -156,6 +148,20 @@ exports.receiveData = async (req, res, next) => {
       },
     });
     next();
+
+    // Async Non-Blocking DB Persistence (Throttled to 1 write/sec or on vibration/seismic shock)
+    const isVibEvent = (sw420_1 === 1 || sw420_2 === 1 || d1.magnitude > 1.30 || d2.magnitude > 1.30 || mlPrediction.eventType !== 'NORMAL');
+    const nowMs = Date.now();
+    if (isVibEvent || (nowMs - lastDbWriteMs >= 1000)) {
+      lastDbWriteMs = nowMs;
+      db.query(queryText, values).catch((dbErr) => {
+        if (!hasWarnedDbQuota) {
+          console.warn('⚠️ [DB Persistence Notice] ' + dbErr.message + ' (Streaming uninterrupted via memory)');
+          hasWarnedDbQuota = true;
+        }
+      });
+    }
+
   } catch (err) {
     console.error('Error processing sensor data:', err);
     res.status(500).json({ error: 'Processing error' });

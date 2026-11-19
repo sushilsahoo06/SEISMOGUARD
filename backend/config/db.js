@@ -1,14 +1,17 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+// Use direct Neon connection to avoid PgBouncer session drops
+const connectionString = (process.env.DATABASE_URL || '').replace('-pooler.', '.');
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
   ssl: {
     rejectUnauthorized: false, // Required for Neon SSL connection
   },
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  max: 10,
+  idleTimeoutMillis: 15000,
+  connectionTimeoutMillis: 15000,
 });
 
 let hasLoggedDbConnect = false;
@@ -25,4 +28,5 @@ pool.on('error', (err) => {
 
 module.exports = {
   query: (text, params) => pool.query(text, params),
+  pool,
 };

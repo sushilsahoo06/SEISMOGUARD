@@ -114,12 +114,12 @@ async function startBridge() {
     // POST data to BOTH Cloud Render (for Vercel) and Localhost (for local dashboard)
     const payload = JSON.stringify(data);
 
-    // Fast-path local dispatch (timeout 500ms)
+    // Fast-path local dispatch (timeout 3000ms)
     fetch('http://localhost:5000/api/sensor-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: payload,
-      signal: AbortSignal.timeout(500),
+      signal: AbortSignal.timeout(3000),
     }).catch(() => {});
 
     // Async cloud dispatch (timeout 800ms, non-blocking)

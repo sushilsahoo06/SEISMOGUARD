@@ -1,4 +1,4 @@
-# 🏢 Structural Health Monitoring (SHM) & Seismic Early Warning System
+# 🏢 SeismoGuard — Integrated Seismic Isolation, Structural Health Monitoring & Emergency Alert System
 
 A full-stack, real-time IoT and civil engineering monitoring platform designed to analyze building structural behavior, detect seismic vibrations, evaluate collapse risks during earthquakes, and automatically trigger life-saving emergency phone calls, SMS, and WhatsApp alerts to residents and relatives.
 
@@ -213,6 +213,15 @@ npm install
 npm run dev
 # Runs locally at http://localhost:5173
 ```
+
+---
+
+## 👨‍💻 Author & Engineering Research
+**Sushil Sahoo**  
+*B.Tech in Civil Engineering (BPUT) | Full-Stack & IoT Systems Engineer*  
+* **GitHub:** [github.com/sushilsahoo06](https://github.com/sushilsahoo06)  
+* **LinkedIn:** [linkedin.com/in/sushilsahoo](https://www.linkedin.com/in/sushil-sahoo-982716271/)  
+* **Email:** [sahoosushil456@gmail.com](mailto:sahoosushil456@gmail.com)  
 
 ---
 

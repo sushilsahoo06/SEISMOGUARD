@@ -330,7 +330,7 @@ exports.testSMS = async (req, res) => {
     const result = await twilioService.client.messages.create({
       body,
       to: twilioService.formatE164(phone),
-      from: process.env.TWILIO_PHONE_NUMBER || '+14097465233',
+      from: process.env.TWILIO_PHONE_NUMBER || '+17372212163',
     });
 
     res.json({ status: 'success', message: 'Test SMS sent successfully!', sid: result.sid });

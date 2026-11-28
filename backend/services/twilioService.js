@@ -3,7 +3,7 @@ require('dotenv').config({ path: __dirname + '/../.env' });
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken  = process.env.TWILIO_AUTH_TOKEN;
-const fromPhone  = process.env.TWILIO_PHONE_NUMBER || '+14097465233';
+const fromPhone  = process.env.TWILIO_PHONE_NUMBER || '+17372212163';
 const whatsappFrom = process.env.TWILIO_WHATSAPP_NUMBER || '+14155238886';
 
 let client = null;
@@ -42,13 +42,13 @@ async function makeEmergencyCall(occupant) {
   // TwiML that speaks emergency evacuation warning and automatically terminates
   const twiml = `
     <Response>
-      <Say voice="Polly.Aditi" language="en-IN">
+      <Say>
         EMERGENCY EARTHQUAKE WARNING! A severe seismic tremor has struck ${building}.
         You are registered inside ${room}.
         Evacuate immediately using emergency stairs. Do not use elevators! Proceed to the open ground assembly area now.
       </Say>
       <Pause length="1"/>
-      <Say voice="Polly.Aditi" language="en-IN">
+      <Say>
         Repeat: Evacuate immediately!
       </Say>
       <Hangup/>

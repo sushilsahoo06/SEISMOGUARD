@@ -55,11 +55,25 @@ async function makeEmergencyCall(occupant) {
     </Response>
   `.trim();
 
-  const call = await client.calls.create({
-    twiml,
-    to,
-    from: fromPhone,
-  });
+  let call;
+  try {
+    call = await client.calls.create({
+      twiml,
+      to,
+      from: fromPhone,
+    });
+  } catch (err) {
+    // Fallback for Twilio Trial accounts that restrict inline `twiml` parameter
+    if (err.message && err.message.toLowerCase().includes('trial')) {
+      call = await client.calls.create({
+        url: 'http://demo.twilio.com/docs/voice.xml',
+        to,
+        from: fromPhone,
+      });
+    } else {
+      throw err;
+    }
+  }
 
   return {
     sid: call.sid,

@@ -65,8 +65,10 @@ async function makeEmergencyCall(occupant) {
   } catch (err) {
     // Fallback for Twilio Trial accounts that restrict inline `twiml` parameter
     if (err.message && err.message.toLowerCase().includes('trial')) {
+      const baseUrl = process.env.PUBLIC_BACKEND_URL || 'https://shm-v5rg.onrender.com';
+      const twimlUrl = `${baseUrl}/api/alerts/twiml?building=${encodeURIComponent(building)}&room=${encodeURIComponent(room)}`;
       call = await client.calls.create({
-        url: 'http://demo.twilio.com/docs/voice.xml',
+        url: twimlUrl,
         to,
         from: fromPhone,
       });

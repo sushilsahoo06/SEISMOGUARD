@@ -21,5 +21,9 @@ router.post('/test-whatsapp', alertController.testWhatsApp);
 // 5. Alert Dispatch History Logs
 router.get('/logs', alertController.getAlertLogs);
 
+// 6. Public TwiML Webhook for Twilio Voice Calls (GET & POST)
+router.get('/twiml', alertController.getEmergencyTwiml);
+router.post('/twiml', alertController.getEmergencyTwiml);
+
 module.exports = router;
 

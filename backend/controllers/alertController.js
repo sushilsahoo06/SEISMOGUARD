@@ -384,4 +384,21 @@ exports.getAlertLogs = async (req, res) => {
 };
 
 
+// 5. Public TwiML XML Endpoint for Twilio Voice Call Speech
+exports.getEmergencyTwiml = (req, res) => {
+  const esc = (s) => String(s || '').replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
+  const building = esc(req.query.building || 'Building 1');
+  const room = esc(req.query.room || 'your unit');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say>Emergency earthquake warning! A severe seismic tremor has struck ${building}. You are registered inside ${room}. Evacuate immediately using emergency stairs. Do not use elevators! Proceed to the open ground assembly area now.</Say>
+  <Pause length="1"/>
+  <Say>Repeat: Evacuate immediately!</Say>
+  <Hangup/>
+</Response>`;
+
+  res.type('text/xml').send(xml);
+};
+
 module.exports.executeEmergencyBroadcast = executeEmergencyBroadcast;
